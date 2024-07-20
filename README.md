@@ -7,6 +7,8 @@
 [![PR](https://img.shields.io/github/issues-pr/cococo2000/BigVectorBench.svg)]([https://github.com/cococo2000/BigVectorBench/issues](https://github.com/cococo2000/BigVectorBench/pulls))
 [![PR](https://img.shields.io/github/issues-pr-closed/cococo2000/BigVectorBench.svg)]([https://github.com/cococo2000/BigVectorBench/issues](https://github.com/cococo2000/BigVectorBench/pulls))
 
+BigVectorBench is an innovative benchmark suite crafted to thoroughly evaluate the performance of vector databases. This project is born out of the realization that existing benchmarks fall short in assessing the critical capabilities of vector databases, particularly in handling heterogeneous data embeddings and executing compound queries. Our suite aims to fill this evaluation gap, providing a comprehensive framework for measuring the efficiency and capacity of vector databases in real-world scenarios.
+
 ## Install
 
 ### Clone the repository
@@ -34,6 +36,8 @@ pip3 install -r requirements.txt
 ```
 
 ### Build Docker Images for Databases
+
+The command below will build the Docker images for all databases/algorithms used in the BigVectorBench.
 
 ```bash
 python install.py
@@ -67,10 +71,28 @@ python run.py --dataset app_reviews-384-euclidean-filter --count 100 --runs 3 --
 
 ## Datasets
 
+### Filter
 
+- ag_news-384-euclidean-filter
+- cc_news-384-euclidean-filter
+- app_reviews-384-euclidean-filter
+- amazon-384-euclidean-5filter
+
+### Multi-Modal
+
+- img-wikipedia-1024-euclidean-mm
+- librispeech_asr-1024-euclidean-mm
+- gpt4vision-1024-euclidean-mm
+
+### Multi-Vector
+
+- webvid-4-512-euclidean
+
+### Big
+
+- dbpedia-entities-openai3-text-embedding-3-large-1536-1000k-euclidean
+- dbpedia-entities-openai3-text-embedding-3-large-3072-1000k-euclidean
 
 ## Results
-
-
 
 ## Acknowledgements
