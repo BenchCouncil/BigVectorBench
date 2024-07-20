@@ -1,8 +1,8 @@
 FROM ubuntu:22.04
 
 # Change apt source to Tsinghua mirror
-# RUN sed -i 's/http:\/\/archive.ubuntu.com/http:\/\/mirrors.tuna.tsinghua.edu.cn\/ubuntu/g' /etc/apt/sources.list
-# RUN apt-get clean
+RUN sed -i 's/http:\/\/archive.ubuntu.com/http:\/\/mirrors.tuna.tsinghua.edu.cn\/ubuntu/g' /etc/apt/sources.list \
+    && apt-get clean
 
 # Install Python3 and pip3
 RUN apt-get update \
@@ -10,7 +10,7 @@ RUN apt-get update \
     && pip3 install -U pip \
     && python3 --version
 # Change pip source to Tsinghua mirror
-# RUN pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 # Set up the working directory
 WORKDIR /home/app
@@ -35,6 +35,16 @@ RUN echo \
     "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
     $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
     tee /etc/apt/sources.list.d/docker.list > /dev/null
+# # Use Tsinghua mirror to install Docker
+#     RUN apt-get update \
+#     && apt-get install -y ca-certificates curl \
+#     && install -m 0755 -d /etc/apt/keyrings \
+#     && curl -fsSL https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc \
+#     && chmod a+r /etc/apt/keyrings/docker.asc
+# RUN echo \
+#     "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/ubuntu \
+#     $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+#     tee /etc/apt/sources.list.d/docker.list > /dev/null
 # To install the latest version of Docker
 RUN apt-get update \
     && apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
