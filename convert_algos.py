@@ -96,7 +96,7 @@ def config_write(module_name: str, content: Dict[str, Dict[str, AlgorithmFile]])
 
     CustomDumper.add_representer(list, CustomDumper.represent_list)
     
-    with open(f"ann_benchmarks/algorithms/{module_name}/config.yml", 'w+') as cfg:
+    with open(f"bigvectorbench/algorithms/{module_name}/config.yml", 'w+') as cfg:
         yaml.dump(content, cfg, Dumper=CustomDumper, default_flow_style=False)
 
 

@@ -2,9 +2,9 @@
 import argparse
 import csv
 
-from ann_benchmarks.datasets import DATASETS, get_dataset
-from ann_benchmarks.plotting.utils import compute_metrics_all_runs
-from ann_benchmarks.results import load_all_results
+from bigvectorbench.datasets import DATASETS, get_dataset
+from bigvectorbench.plotting.utils import compute_metrics_all_runs
+from bigvectorbench.results import load_all_results
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

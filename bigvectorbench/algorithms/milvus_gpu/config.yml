@@ -1,0 +1,100 @@
+float:
+  euclidean:
+    - base_args: ["@metric", "@dimension"]
+      constructor: MilvusGPU_BF
+      disabled: false
+      docker_tag: bigvectorbench-milvus_gpu
+      module: bigvectorbench.algorithms.milvus_gpu
+      name: milvus-gpu-bf
+      run_groups:
+        GPU_BF:
+          args:
+            []
+    - base_args: ["@metric", "@dimension"]
+      constructor: MilvusGPU_IVFFLAT
+      disabled: false
+      docker_tag: bigvectorbench-milvus_gpu
+      module: bigvectorbench.algorithms.milvus_gpu
+      name: milvus-gpu-ivfflat
+      run_groups:
+        GPU_IVFFLAT_32:
+          arg_groups: [{ nlist: 32 }]
+          query_args: [[1, 4, 8, 16, 32]]
+        GPU_IVFFLAT_64:
+          arg_groups: [{ nlist: 64 }]
+          query_args: [[4, 16, 32, 48, 64]]
+        GPU_IVFFLAT_128:
+          arg_groups: [{ nlist: 128 }]
+          query_args: [[8, 32, 64, 96, 128]]
+        GPU_IVFFLAT_512:
+          arg_groups: [{ nlist: 512 }]
+          query_args: [[32, 128, 256, 384, 512]]
+        GPU_IVFFLAT_1024:
+          arg_groups: [{ nlist: 1024 }]
+          query_args: [[64, 256, 512, 768, 1024]]
+        GPU_IVFFLAT_2048:
+          arg_groups: [{ nlist: 2048 }]
+          query_args: [[128, 512, 1024, 1536, 2048]]
+        GPU_IVFFLAT_4096:
+          arg_groups: [{ nlist: 4096 }]
+          query_args: [[256, 1024, 2048, 3072, 4096]]
+        GPU_IVFFLAT_8192:
+          arg_groups: [{ nlist: 8192 }]
+          query_args: [[512, 2048, 4096, 6144, 8192]]
+    - base_args: ["@metric", "@dimension"]
+      constructor: MilvusGPU_IVFPQ
+      disabled: false
+      docker_tag: bigvectorbench-milvus_gpu
+      module: bigvectorbench.algorithms.milvus_gpu
+      name: milvus-gpu-ivfpq
+      run_groups:
+        GPU_IVFPQ_64:
+          args:
+            nlist: [64]
+            m: [4, 8, 16]
+          query_args: [[4, 8, 16, 32, 64]]
+        GPU_IVFPQ_128:
+          args:
+            nlist: [128]
+            m: [4, 8, 16]
+          query_args: [[8, 16, 32, 64, 128]]
+        GPU_IVFPQ_256:
+          args:
+            nlist: [256]
+            m: [4, 8, 16]
+          query_args: [[16, 32, 64, 128, 256]]
+        GPU_IVFPQ_512:
+          args:
+            nlist: [512]
+            m: [4, 8, 16]
+          query_args: [[32, 64, 128, 256, 512]]
+        GPU_IVFPQ_1024:
+          args:
+            nlist: [1024]
+            m: [4, 8, 16]
+          query_args: [[64, 128, 256, 512, 1024]]
+    - base_args: ["@metric", "@dimension"]
+      constructor: MilvusGPU_CAGRA
+      disabled: false
+      docker_tag: bigvectorbench-milvus_gpu
+      module: bigvectorbench.algorithms.milvus_gpu
+      name: milvus-gpu-cagra
+      run_groups:
+        GPU_CAGRA_1:
+          arg_groups: [{ intermediate_graph_degree: 32, graph_degree: 16, build_algo: "IVF_PQ" }]
+          query_args: [[128, 256, 512], [2, 4, 8, 16, 32], [0], [0], [0]]
+        GPU_CAGRA_2:
+          arg_groups: [{ intermediate_graph_degree: 64, graph_degree: 32, build_algo: "IVF_PQ" }]
+          query_args: [[128, 256, 512], [2, 4, 8, 16, 32], [0], [0], [0]]
+        GPU_CAGRA_3:
+          arg_groups: [{ intermediate_graph_degree: 128, graph_degree: 64, build_algo: "IVF_PQ" }]
+          query_args: [[128, 256, 512], [2, 4, 8, 16, 32], [0], [0], [0]]
+        GPU_CAGRA_4:
+          arg_groups: [{ intermediate_graph_degree: 32, graph_degree: 16, build_algo: "NN_DESCENT" }]
+          query_args: [[128, 256, 512], [2, 4, 8, 16, 32], [0], [0], [0]]
+        GPU_CAGRA_5:
+          arg_groups: [{ intermediate_graph_degree: 64, graph_degree: 32, build_algo: "NN_DESCENT" }]
+          query_args: [[128, 256, 512], [2, 4, 8, 16, 32], [0], [0], [0]]
+        GPU_CAGRA_6:
+          arg_groups: [{ intermediate_graph_degree: 128, graph_degree: 64, build_algo: "NN_DESCENT" }]
+          query_args: [[128, 256, 512], [2, 4, 8, 16, 32], [0], [0], [0]]

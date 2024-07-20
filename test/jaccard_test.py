@@ -1,5 +1,5 @@
 import pytest
-from ann_benchmarks.distance import jaccard
+from bigvectorbench.distance import jaccard
 
 
 def test_similarity():

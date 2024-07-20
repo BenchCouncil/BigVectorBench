@@ -1,0 +1,11 @@
+float:
+  any:
+  - base_args: ['@metric']
+    constructor: DummyAlgo
+    disabled: true
+    docker_tag: bigvectorbench-dummy_algo
+    module: bigvectorbench.algorithms.dummy_algo
+    name: dummy-algo
+    run_groups:
+      empty:
+        args: []

@@ -1,6 +1,6 @@
 import pytest
 
-from ann_benchmarks.plotting.metrics import knn, queries_per_second, index_size, build_time, candidates
+from bigvectorbench.plotting.metrics import knn, queries_per_second, index_size, build_time, candidates
 
 
 class DummyMetric:

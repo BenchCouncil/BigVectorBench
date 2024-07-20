@@ -1,11 +1,11 @@
-""" This script builds the docker images for the algorithms in the ann_benchmarks/algorithms directory. """
+""" This script builds the docker images for the algorithms in the bigvectorbench/algorithms directory. """
 import argparse
 import os
 import subprocess
 import sys
 from multiprocessing import Pool
 
-from ann_benchmarks.main import positive_int
+from bigvectorbench.main import positive_int
 
 
 def build(library, build_args):
@@ -18,7 +18,7 @@ def build(library, build_args):
 
     try:
         subprocess.check_call(
-            f"docker build {q} --rm -t ann-benchmarks-{library} -f ann_benchmarks/algorithms/{library}/Dockerfile  .",
+            f"docker build {q} --rm -t bigvectorbench-{library} -f bigvectorbench/algorithms/{library}/Dockerfile  .",
             shell=True,
         )
         return {library: "success"}
@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     print("Building base image...")
     subprocess.check_call(
-        "docker build --rm -t ann-benchmarks -f ann_benchmarks/algorithms/base/Dockerfile .",
+        "docker build --rm -t bigvectorbench -f bigvectorbench/algorithms/base/Dockerfile .",
         shell=True,
      )
     print("Building base image done.")
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     elif os.getenv("LIBRARY"):
         tags = [os.getenv("LIBRARY")]
     else:
-        tags = [fn for fn in os.listdir("ann_benchmarks/algorithms") if fn not in ["__init__.py", "__pycache__", "base"]]
+        tags = [fn for fn in os.listdir("bigvectorbench/algorithms") if fn not in ["__init__.py", "__pycache__", "base"]]
     print(f"Building algorithms: {tags}...")
 
     print(f"Building algorithm images with {args.proc} processes")

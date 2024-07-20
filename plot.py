@@ -6,11 +6,11 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ann_benchmarks.datasets import get_dataset
-from ann_benchmarks.plotting.metrics import all_metrics as metrics
-from ann_benchmarks.plotting.utils import (compute_metrics, create_linestyles,
+from bigvectorbench.datasets import get_dataset
+from bigvectorbench.plotting.metrics import all_metrics as metrics
+from bigvectorbench.plotting.utils import (compute_metrics, create_linestyles,
                                            create_pointset, get_plot_label)
-from ann_benchmarks.results import get_unique_algorithms, load_all_results
+from bigvectorbench.results import get_unique_algorithms, load_all_results
 
 
 def create_plot(all_data, raw, x_scale, y_scale, xn, yn, fn_out, linestyles, batch):

@@ -1,0 +1,24 @@
+float:
+  any:
+    - base_args: ['@metric']
+      constructor: WeaviateFLAT
+      disabled: false
+      docker_tag: bigvectorbench-weaviate
+      module: bigvectorbench.algorithms.weaviate
+      name: weaviate-flat
+      run_groups:
+        weaviate:
+          args:
+            []
+    - base_args: ['@metric']
+      constructor: WeaviateHNSW
+      disabled: false
+      docker_tag: bigvectorbench-weaviate
+      module: bigvectorbench.algorithms.weaviate
+      name: weaviate-hnsw
+      run_groups:
+        HNSW:
+          args:
+            M: [4, 8, 12, 16, 24, 36, 48, 64, 96]
+            efConstruction: [200, 500]
+          query_args: [[100, 120, 150, 200, 500, 600, 800, -1]]
