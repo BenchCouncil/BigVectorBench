@@ -11,9 +11,6 @@ data/*
 
 *.log
 
-results/*
-!results/*.png
-
 venv
 
 .idea

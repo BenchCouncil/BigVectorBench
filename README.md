@@ -14,7 +14,7 @@ BigVectorBench is an innovative benchmark suite crafted to thoroughly evaluate t
 ### Clone the repository
 
 ```bash
-git clone <url>
+git clone https://github.com/BenchCouncil/BigVectorBench.git
 ```
 
 ### Make Environment

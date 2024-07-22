@@ -43,14 +43,9 @@ def test_angular():
     assert dist(p, q) == pytest.approx(2)
 
 
-def test_angular_dataset():
-    # Make sure distances in the datasets are calculated consistent with the definitions
-    # This is to avoid issues like #367
-
-    dist_f = metrics["angular"].distance
-
-    hdf5_f, n_dims = get_dataset("glove-25-angular")
-
+def test_euclidean_dataset():
+    dist_f = metrics["euclidean"].distance
+    hdf5_f, n_dims = get_dataset("random-s-100-euclidean")
     n = 1000
     for u, nns, dists in zip(hdf5_f["test"][:n], hdf5_f["neighbors"][:n], hdf5_f["distances"][:n]):
         for j, dist in zip(nns, dists):

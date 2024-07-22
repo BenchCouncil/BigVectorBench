@@ -1,4 +1,7 @@
-""" Create a dataset from the given dataset name. """
+"""
+Create a dataset from the given dataset name.
+"""
+
 import argparse
 
 from bigvectorbench.datasets import DATASETS, get_dataset_fn
