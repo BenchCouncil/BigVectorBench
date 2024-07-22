@@ -1,4 +1,7 @@
-""" Export the results of the experiments to a CSV file. """
+"""
+Export the results of the experiments to a CSV file.
+"""
+
 import argparse
 import csv
 

@@ -1,4 +1,6 @@
-""" This script builds the docker images for the algorithms in the bigvectorbench/algorithms directory. """
+"""
+This script builds the docker images for the algorithms in the bigvectorbench/algorithms directory.
+"""
 import argparse
 import os
 import subprocess
