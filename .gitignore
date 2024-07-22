@@ -11,6 +11,10 @@ data/*
 
 *.log
 
+results/*
+!results/*.png
+!results/vldb2015/*
+
 venv
 
 .idea

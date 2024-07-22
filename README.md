@@ -19,19 +19,18 @@ git clone https://github.com/BenchCouncil/BigVectorBench.git
 
 ### Make Environment
 
-- Docker
+Tested on: Ubuntu 20.04
 
-```bash
-```
+- Docker Engine 27.x
+  - For installation instructions, see [Install Docker Engine](https://docs.docker.com/engine/install/).
+  - Enable Nvidia GPU support for Docker, see [Nvidia Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
 
 - Python 3.10 and dependencies
+  - Create a new conda environment and install dependencies from `requirements.txt`:
 
 ```bash
-# Create a new conda environment
 conda create -n bigvectorbench python=3.10
-# Activate the environment
 conda activate bigvectorbench
-# Install dependencies from requirements.txt
 pip3 install -r requirements.txt
 ```
 
