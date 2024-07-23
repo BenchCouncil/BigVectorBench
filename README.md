@@ -70,6 +70,8 @@ python run.py --dataset app_reviews-384-euclidean-filter --count 100 --runs 3 --
 
 ## Datasets
 
+The datasets are available at [link](https://huggingface.co/datasets/Patrickcode/BigVectorBench/tree/main).
+
 ### Filter
 
 - ag_news-384-euclidean-filter
