@@ -8,8 +8,7 @@ float:
       name: milvus-gpu-bf
       run_groups:
         GPU_BF:
-          args:
-            []
+          args: []
     - base_args: ["@metric", "@dimension"]
       constructor: MilvusGPU_IVFFLAT
       disabled: false
@@ -81,20 +80,62 @@ float:
       name: milvus-gpu-cagra
       run_groups:
         GPU_CAGRA_1:
-          arg_groups: [{ intermediate_graph_degree: 32, graph_degree: 16, build_algo: "IVF_PQ" }]
+          arg_groups:
+            [
+              {
+                intermediate_graph_degree: 32,
+                graph_degree: 16,
+                build_algo: "IVF_PQ",
+              },
+            ]
           query_args: [[128, 256, 512], [2, 4, 8, 16, 32], [0], [0], [0]]
         GPU_CAGRA_2:
-          arg_groups: [{ intermediate_graph_degree: 64, graph_degree: 32, build_algo: "IVF_PQ" }]
+          arg_groups:
+            [
+              {
+                intermediate_graph_degree: 64,
+                graph_degree: 32,
+                build_algo: "IVF_PQ",
+              },
+            ]
           query_args: [[128, 256, 512], [2, 4, 8, 16, 32], [0], [0], [0]]
         GPU_CAGRA_3:
-          arg_groups: [{ intermediate_graph_degree: 128, graph_degree: 64, build_algo: "IVF_PQ" }]
+          arg_groups:
+            [
+              {
+                intermediate_graph_degree: 128,
+                graph_degree: 64,
+                build_algo: "IVF_PQ",
+              },
+            ]
           query_args: [[128, 256, 512], [2, 4, 8, 16, 32], [0], [0], [0]]
         GPU_CAGRA_4:
-          arg_groups: [{ intermediate_graph_degree: 32, graph_degree: 16, build_algo: "NN_DESCENT" }]
+          arg_groups:
+            [
+              {
+                intermediate_graph_degree: 32,
+                graph_degree: 16,
+                build_algo: "NN_DESCENT",
+              },
+            ]
           query_args: [[128, 256, 512], [2, 4, 8, 16, 32], [0], [0], [0]]
         GPU_CAGRA_5:
-          arg_groups: [{ intermediate_graph_degree: 64, graph_degree: 32, build_algo: "NN_DESCENT" }]
+          arg_groups:
+            [
+              {
+                intermediate_graph_degree: 64,
+                graph_degree: 32,
+                build_algo: "NN_DESCENT",
+              },
+            ]
           query_args: [[128, 256, 512], [2, 4, 8, 16, 32], [0], [0], [0]]
         GPU_CAGRA_6:
-          arg_groups: [{ intermediate_graph_degree: 128, graph_degree: 64, build_algo: "NN_DESCENT" }]
+          arg_groups:
+            [
+              {
+                intermediate_graph_degree: 128,
+                graph_degree: 64,
+                build_algo: "NN_DESCENT",
+              },
+            ]
           query_args: [[128, 256, 512], [2, 4, 8, 16, 32], [0], [0], [0]]

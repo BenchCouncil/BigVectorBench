@@ -1,4 +1,5 @@
 """ This module contains utility functions for computing distances between data points. """
+
 from typing import Callable, List, NamedTuple, Tuple, Union
 
 import h5py
@@ -22,28 +23,29 @@ def norm(a):
 def euclidean(a, b):
     return norm(a - b)
 
+
 class Metric(NamedTuple):
     distance: Callable[[np.ndarray, np.ndarray], float]
     distance_valid: Callable[[float], bool]
 
+
 metrics = {
     "hamming": Metric(
         distance=lambda a, b: np.mean(a.astype(np.bool_) ^ b.astype(np.bool_)),
-        distance_valid=lambda a: True
+        distance_valid=lambda a: True,
     ),
     "jaccard": Metric(
-        distance=lambda a, b: 1 - jaccard(a, b),
-        distance_valid=lambda a: a < 1 - 1e-5
+        distance=lambda a, b: 1 - jaccard(a, b), distance_valid=lambda a: a < 1 - 1e-5
     ),
     "euclidean": Metric(
-        distance=lambda a, b: euclidean(a, b),
-        distance_valid=lambda a: True
+        distance=lambda a, b: euclidean(a, b), distance_valid=lambda a: True
     ),
     "angular": Metric(
         distance=lambda a, b: 1 - np.dot(a, b) / (norm(a) * norm(b)),
-        distance_valid=lambda a: True
+        distance_valid=lambda a: True,
     ),
 }
+
 
 def compute_distance(metric: str, a: np.ndarray, b: np.ndarray) -> float:
     """
@@ -61,7 +63,9 @@ def compute_distance(metric: str, a: np.ndarray, b: np.ndarray) -> float:
         KeyError: If the specified metric is not found in the 'metrics' dictionary.
     """
     if metric not in metrics:
-        raise KeyError(f"Unknown metric '{metric}'. Known metrics are {list(metrics.keys())}")
+        raise KeyError(
+            f"Unknown metric '{metric}'. Known metrics are {list(metrics.keys())}"
+        )
 
     return metrics[metric].distance(a, b)
 
@@ -81,7 +85,9 @@ def is_distance_valid(metric: str, distance: float) -> bool:
         KeyError: If the specified metric is not found in the 'metrics' dictionary.
     """
     if metric not in metrics:
-        raise KeyError(f"Unknown metric '{metric}'. Known metrics are {list(metrics.keys())}")
+        raise KeyError(
+            f"Unknown metric '{metric}'. Known metrics are {list(metrics.keys())}"
+        )
 
     return metrics[metric].distance_valid(distance)
 
@@ -97,12 +103,12 @@ def convert_sparse_to_list(data: np.ndarray, lengths: List[int]) -> List[np.ndar
     Returns:
         List[np.ndarray]: A list of arrays where each array is a data sample.
     """
-    return [
-        data[i - l : i] for i, l in zip(np.cumsum(lengths), lengths)
-    ]
+    return [data[i - l : i] for i, l in zip(np.cumsum(lengths), lengths)]
 
 
-def dataset_transform(dataset: h5py.Dataset) -> Tuple[Union[np.ndarray, List[np.ndarray]], Union[np.ndarray, List[np.ndarray]]]:
+def dataset_transform(
+    dataset: h5py.Dataset,
+) -> Tuple[Union[np.ndarray, List[np.ndarray]], Union[np.ndarray, List[np.ndarray]]]:
     """
     Transforms the dataset from the HDF5 format to conventional numpy format.
 
@@ -122,5 +128,5 @@ def dataset_transform(dataset: h5py.Dataset) -> Tuple[Union[np.ndarray, List[np.
     # so we transform it back to the format expected by the algorithms here (array of array of ints)
     return (
         convert_sparse_to_list(dataset["train"], dataset["size_train"]),
-        convert_sparse_to_list(dataset["test"], dataset["size_test"])
+        convert_sparse_to_list(dataset["test"], dataset["size_test"]),
     )

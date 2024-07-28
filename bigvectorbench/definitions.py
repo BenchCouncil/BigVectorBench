@@ -1,4 +1,5 @@
 """ Definitions for algorithms and their arguments. """
+
 from dataclasses import dataclass
 import importlib
 import os
@@ -21,10 +22,11 @@ class Definition:
     query_argument_groups: List[List[Any]]
     disabled: bool
 
+
 def instantiate_algorithm(definition: Definition) -> BaseANN:
     """
     Create a `BaseANN` from a definition.
-     
+
     Args:
         definition (Definition): An object containing information about the algorithm.
 
@@ -32,10 +34,12 @@ def instantiate_algorithm(definition: Definition) -> BaseANN:
         BaseANN: Instantiated algorithm
 
     Note:
-        The constructors for the algorithm definition are generally located at 
+        The constructors for the algorithm definition are generally located at
         bigvectorbench/algorithms/*/module.py.
     """
-    print(f"Trying to instantiate {definition.module}.{definition.constructor}({definition.arguments})")
+    print(
+        f"Trying to instantiate {definition.module}.{definition.constructor}({definition.arguments})"
+    )
     module = importlib.import_module(f"{definition.module}.module")
     constructor = getattr(module, definition.constructor)
     return constructor(*definition.arguments)
@@ -43,6 +47,7 @@ def instantiate_algorithm(definition: Definition) -> BaseANN:
 
 class InstantiationStatus(Enum):
     """Possible status of instantiating an algorithm from a python module import."""
+
     AVAILABLE = 0
     NO_CONSTRUCTOR = 1
     NO_MODULE = 2
@@ -52,7 +57,7 @@ def algorithm_status(definition: Definition) -> InstantiationStatus:
     """
     Determine the instantiation status of the algorithm based on its python module and constructor.
 
-    Attempts to find the Python class constructor based on the definition's module path and 
+    Attempts to find the Python class constructor based on the definition's module path and
     constructor name.
 
     Args:
@@ -71,7 +76,9 @@ def algorithm_status(definition: Definition) -> InstantiationStatus:
         return InstantiationStatus.NO_MODULE
 
 
-def _generate_combinations(args: Union[List[Any], Dict[Any, Any]]) -> List[Union[List[Any], Dict[Any, Any]]]:
+def _generate_combinations(
+    args: Union[List[Any], Dict[Any, Any]]
+) -> List[Union[List[Any], Dict[Any, Any]]]:
     """
     Generate combinations of elements from args, either the list or combinations of key-value pairs in a dict.
 
@@ -103,7 +110,7 @@ def _generate_combinations(args: Union[List[Any], Dict[Any, Any]]) -> List[Union
 def _substitute_variables(arg: Any, vs: Dict[str, Any]) -> Any:
     """
     Substitutes any string variables present in the argument structure with provided values.
-    
+
     Support for nested substitution in the case `arg` is a List or Dict.
 
     Args:
@@ -126,16 +133,17 @@ def _substitute_variables(arg: Any, vs: Dict[str, Any]) -> Any:
 def get_config_files(base_dir: str = "bigvectorbench/algorithms") -> List[str]:
     """Get config files for all algorithms."""
     config_files = glob.glob(os.path.join(base_dir, "*", "config.yml"))
-    return list(
-        set(config_files) - {os.path.join(base_dir, "base", "config.yml")}
-    )
+    return list(set(config_files) - {os.path.join(base_dir, "base", "config.yml")})
 
-def load_configs(point_type: str, base_dir: str = "bigvectorbench/algorithms") -> Dict[str, Any]:
+
+def load_configs(
+    point_type: str, base_dir: str = "bigvectorbench/algorithms"
+) -> Dict[str, Any]:
     """Load algorithm configurations for a given point_type."""
     config_files = get_config_files(base_dir=base_dir)
     configs = {}
     for config_file in config_files:
-        with open(config_file, 'r', encoding='utf-8') as stream:
+        with open(config_file, "r", encoding="utf-8") as stream:
             try:
                 config_data = yaml.safe_load(stream)
                 algorithm_name = os.path.basename(os.path.dirname(config_file))
@@ -145,12 +153,15 @@ def load_configs(point_type: str, base_dir: str = "bigvectorbench/algorithms") -
                 print(f"Error loading YAML from {config_file}: {e}")
     return configs
 
-def _get_definitions(base_dir: str = "bigvectorbench/algorithms") -> Dict[str, Dict[str, Any]]:
+
+def _get_definitions(
+    base_dir: str = "bigvectorbench/algorithms",
+) -> Dict[str, Dict[str, Any]]:
     """Load algorithm configurations for a given point_type."""
     config_files = get_config_files(base_dir=base_dir)
     configs = {}
     for config_file in config_files:
-        with open(config_file, 'r', encoding='utf-8') as stream:
+        with open(config_file, "r", encoding="utf-8") as stream:
             try:
                 config_data = yaml.safe_load(stream)
                 algorithm_name = os.path.basename(os.path.dirname(config_file))
@@ -164,8 +175,8 @@ def _get_algorithm_definitions(
     point_type: str, distance_metric: str, base_dir: str = "bigvectorbench/algorithms"
 ) -> Dict[str, Dict[str, Any]]:
     """Get algorithm definitions for a specific point type and distance metric.
-    
-    A specific algorithm folder can have multiple algorithm definitions for a given point type and 
+
+    A specific algorithm folder can have multiple algorithm definitions for a given point type and
     metric. For example, `bigvectorbench.algorithms.nmslib` has two definitions for euclidean float
     data: specifically `SW-graph(nmslib)` and `hnsw(nmslib)`, even though the module is named nmslib.
 
@@ -180,7 +191,7 @@ def _get_algorithm_definitions(
             "disabled": false,
             "docker_tag": bigvectorbench-nmslib,
             ...
-        }, 
+        },
         'SW-graph(nmslib)': {
             "base_args": ['@metric', sw-graph],
             "constructor": NmslibReuseIndex,
@@ -206,12 +217,13 @@ def _get_algorithm_definitions(
 
     return definitions
 
+
 def list_algorithms(base_dir: str = "bigvectorbench/algorithms") -> None:
     """
     Output (to stdout), a list of all algorithms, with their supported point types and metrics.
-    
+
     Args:
-        base_dir (str, optional): The base directory where the algorithms are stored. 
+        base_dir (str, optional): The base directory where the algorithms are stored.
                                   Defaults to "bigvectorbench/algorithms".
     """
     definitions = _get_definitions(base_dir)
@@ -227,7 +239,7 @@ def list_algorithms(base_dir: str = "bigvectorbench/algorithms") -> None:
 
 def generate_arg_combinations(run_group: Dict[str, Any], arg_type: str) -> List:
     """Generate combinations of arguments from a run group for a specific argument type.
-    
+
     Args:
         run_group (Dict[str, Any]): The run group containing argument definitions.
         arg_type (str): The type of argument group to generate combinations for.
@@ -253,10 +265,10 @@ def generate_arg_combinations(run_group: Dict[str, Any], arg_type: str) -> List:
 
 
 def prepare_args(run_group: Dict[str, Any]) -> List:
-    """For an Algorithm's run group, prepare arguments. 
-    
+    """For an Algorithm's run group, prepare arguments.
+
     An `arg_groups` is preferenced over an `args` key.
-    
+
     Args:
         run_group (Dict[str, Any]): The run group containing argument definitions.
 
@@ -267,14 +279,16 @@ def prepare_args(run_group: Dict[str, Any]) -> List:
         ValueError: If the structure of the run group is not recognized.
     """
     if "args" in run_group or "arg_groups" in run_group:
-        return generate_arg_combinations(run_group, "arg_groups" if "arg_groups" in run_group else "args")
+        return generate_arg_combinations(
+            run_group, "arg_groups" if "arg_groups" in run_group else "args"
+        )
     else:
         raise ValueError(f"Unknown run_group structure: {run_group}")
 
 
 def prepare_query_args(run_group: Dict[str, Any]) -> List:
     """For an algorithm's run group, prepare query args/ query arg groups.
-    
+
     Args:
         run_group (Dict[str, Any]): The run group containing argument definitions.
 
@@ -282,36 +296,47 @@ def prepare_query_args(run_group: Dict[str, Any]) -> List:
         List: A list of prepared query arguments.
     """
     if "query_args" in run_group or "query_arg_groups" in run_group:
-        return generate_arg_combinations(run_group, "query_arg_groups" if "query_arg_groups" in run_group else "query_args")
+        return generate_arg_combinations(
+            run_group,
+            "query_arg_groups" if "query_arg_groups" in run_group else "query_args",
+        )
     else:
         return []
 
 
-def create_definitions_from_algorithm(name: str, algo: Dict[str, Any], dimension: int, distance_metric: str = "euclidean", count: int = 10) -> List[Definition]:
+def create_definitions_from_algorithm(
+    name: str,
+    algo: Dict[str, Any],
+    dimension: int,
+    distance_metric: str = "euclidean",
+    count: int = 10,
+) -> List[Definition]:
     """
     Create definitions from an indvidual algorithm. An algorithm (e.g. annoy) can have multiple
-     definitions based on various run groups (see config.ymls for clear examples). 
-    
+     definitions based on various run groups (see config.ymls for clear examples).
+
     Args:
         name (str): Name of the algorithm.
         algo (Dict[str, Any]): Dictionary with algorithm parameters.
         dimension (int): Dimension of the algorithm.
         distance_metric (str, optional): Distance metric used by the algorithm. Defaults to "euclidean".
         count (int, optional): Count of the definitions to be created. Defaults to 10.
-    
+
     Raises:
         Exception: If the algorithm does not define "docker_tag", "module" or "constructor" properties.
-    
+
     Returns:
         List[Definition]: A list of definitions created from the algorithm.
     """
     required_properties = ["docker_tag", "module", "constructor"]
     missing_properties = [prop for prop in required_properties if prop not in algo]
     if missing_properties:
-        raise ValueError(f"Algorithm {name} is missing the following properties: {', '.join(missing_properties)}")
-    
+        raise ValueError(
+            f"Algorithm {name} is missing the following properties: {', '.join(missing_properties)}"
+        )
+
     base_args = algo.get("base_args", [])
-    
+
     definitions = []
     for run_group in algo["run_groups"].values():
         args = prepare_args(run_group)
@@ -349,14 +374,18 @@ def get_definitions(
     count: int = 10,
     base_dir: str = "bigvectorbench/algorithms",
 ) -> List[Definition]:
-    algorithm_definitions = _get_algorithm_definitions(point_type=point_type,  distance_metric=distance_metric, base_dir=base_dir)
+    algorithm_definitions = _get_algorithm_definitions(
+        point_type=point_type, distance_metric=distance_metric, base_dir=base_dir
+    )
 
     definitions: List[Definition] = []
 
     # Map this for each config.yml
-    for (name, algo) in algorithm_definitions.items():
+    for name, algo in algorithm_definitions.items():
         definitions.extend(
-            create_definitions_from_algorithm(name, algo, dimension, distance_metric, count)
+            create_definitions_from_algorithm(
+                name, algo, dimension, distance_metric, count
+            )
         )
 
     return definitions

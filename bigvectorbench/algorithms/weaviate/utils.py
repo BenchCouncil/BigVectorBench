@@ -1,6 +1,7 @@
 """
 Utility functions for weaviate
 """
+
 import re
 
 
@@ -8,6 +9,7 @@ class Filter:
     """
     Filter class to create a filter object for weaviate query
     """
+
     def __init__(self, property_name):
         self.property_name = property_name
         self.conditions = []
@@ -80,6 +82,7 @@ class CompositeFilter:
     """
     Composite filter class to create a composite filter object for weaviate query
     """
+
     def __init__(self, operator, *filters):
         self.operator = operator
         self.filters = filters
@@ -95,8 +98,9 @@ class CompositeFilter:
         return CompositeFilter("or", self, other)
 
     def __str__(self):
-        op_symbol = '&' if self.operator == 'and' else '|'
+        op_symbol = "&" if self.operator == "and" else "|"
         return f" {op_symbol} ".join(str(f) for f in self.filters)
+
 
 def parse_condition(condition):
     """
@@ -131,10 +135,10 @@ def convert_conditions_to_filters(conditions) -> str:
     Convert a condition string to a Filter object
 
     Args:
-        conditions (str): condition string. Example: 
+        conditions (str): condition string. Example:
             - "age > 20 and height < 180 or weight == 70"
             - "text_length >= 3 and text_length <= 63 and unixtime >= 1485302400 and unixtime <= 1487894400 and star >= 4 and star <= 5"
-    
+
     Returns:
         Filters (str): Filter objects for weaviate query
     """

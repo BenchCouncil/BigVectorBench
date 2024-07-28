@@ -1,4 +1,5 @@
 """ This module provides functions for storing and loading results from HDF5 files. """
+
 import json
 import os
 import re
@@ -9,11 +10,13 @@ import h5py
 from bigvectorbench.definitions import Definition
 
 
-def build_result_filepath(dataset_name: Optional[str] = None, 
-                          count: Optional[int] = None, 
-                          definition: Optional[Definition] = None, 
-                          query_arguments: Optional[Any] = None, 
-                          batch_mode: bool = False) -> str:
+def build_result_filepath(
+    dataset_name: Optional[str] = None,
+    count: Optional[int] = None,
+    definition: Optional[Definition] = None,
+    query_arguments: Optional[Any] = None,
+    batch_mode: bool = False,
+) -> str:
     """
     Constructs the filepath for storing the results.
 
@@ -35,7 +38,9 @@ def build_result_filepath(dataset_name: Optional[str] = None,
     if definition:
         d.append(definition.algorithm + ("-batch" if batch_mode else ""))
         data = definition.arguments + query_arguments
-        d.append(re.sub(r"\W+", "_", json.dumps(data, sort_keys=True)).strip("_") + ".hdf5")
+        d.append(
+            re.sub(r"\W+", "_", json.dumps(data, sort_keys=True)).strip("_") + ".hdf5"
+        )
     return os.path.join(*d)
 
 
@@ -46,7 +51,7 @@ def store_results(
     query_arguments: Any,
     attrs: dict,
     results: list,
-    batch: bool = False
+    batch: bool = False,
 ):
     """
     Stores results for an algorithm (and hyperparameters) running against a dataset in a HDF5 file.
@@ -60,7 +65,9 @@ def store_results(
         results (list): Results to be stored.
         batch (bool): If True, the batch mode is activated.
     """
-    filename = build_result_filepath(dataset_name, count, definition, query_arguments, batch)
+    filename = build_result_filepath(
+        dataset_name, count, definition, query_arguments, batch
+    )
     directory, _ = os.path.split(filename)
 
     if not os.path.isdir(directory):
@@ -80,10 +87,10 @@ def store_results(
 
 
 def build_latencies_filepath(
-    dataset_name: Optional[str] = None, 
-    count: Optional[int] = None, 
-    definition: Optional[Definition] = None, 
-    batch_mode: bool = False
+    dataset_name: Optional[str] = None,
+    count: Optional[int] = None,
+    definition: Optional[Definition] = None,
+    batch_mode: bool = False,
 ) -> str:
     """
     Constructs the filepath for storing the latencies.
@@ -105,7 +112,9 @@ def build_latencies_filepath(
     if definition:
         d.append(definition.algorithm + ("-batch" if batch_mode else ""))
         data = definition.arguments
-        d.append(re.sub(r"\W+", "_", json.dumps(data, sort_keys=True)).strip("_") + ".csv")
+        d.append(
+            re.sub(r"\W+", "_", json.dumps(data, sort_keys=True)).strip("_") + ".csv"
+        )
     return os.path.join(*d)
 
 
@@ -115,7 +124,7 @@ def store_insert_update_delete_latencies(
     definition: Definition,
     insert_latencies: list,
     update_latencies: list,
-    delete_latencies: list
+    delete_latencies: list,
 ):
     """
     Stores insert, update, and delete latencies for an algorithm (and hyperparameters) running against a dataset in a csv file.
@@ -137,17 +146,21 @@ def store_insert_update_delete_latencies(
     with open(filename, "w", encoding="utf-8") as f:
         f.write("id,insert_latency,update_latency,delete_latency\n")
         assert len(insert_latencies) == len(update_latencies) == len(delete_latencies)
-        for i, (insert_latency, update_latency, delete_latency) in enumerate(zip(insert_latencies, update_latencies, delete_latencies)):
+        for i, (insert_latency, update_latency, delete_latency) in enumerate(
+            zip(insert_latencies, update_latencies, delete_latencies)
+        ):
             f.write(f"{i},{insert_latency},{update_latency},{delete_latency}\n")
         avg_insert_latency = sum(insert_latencies) / len(insert_latencies)
         avg_update_latency = sum(update_latencies) / len(update_latencies)
         avg_delete_latency = sum(delete_latencies) / len(delete_latencies)
-        f.write(f"average,{avg_insert_latency},{avg_update_latency},{avg_delete_latency}\n")
+        f.write(
+            f"average,{avg_insert_latency},{avg_update_latency},{avg_delete_latency}\n"
+        )
 
 
-def load_all_results(dataset: Optional[str] = None, 
-                 count: Optional[int] = None, 
-                 batch_mode: bool = False) -> Iterator[Tuple[dict, h5py.File]]:
+def load_all_results(
+    dataset: Optional[str] = None, count: Optional[int] = None, batch_mode: bool = False
+) -> Iterator[Tuple[dict, h5py.File]]:
     """
     Loads all the results from the HDF5 files in the specified path.
 

@@ -4,8 +4,8 @@
 [![Build Status](https://img.shields.io/github/actions/workflow/status/BenchCouncil/BigVectorBench/benchmarks.yml?branch=main)](https://github.com/BenchCouncil/BigVectorBench/actions/workflows/benchmarks.yml)
 [![Issues](https://img.shields.io/github/issues/BenchCouncil/BigVectorBench.svg)](https://github.com/BenchCouncil/BigVectorBench/issues)
 [![Issues](https://img.shields.io/github/issues-closed/BenchCouncil/BigVectorBench.svg)](https://github.com/BenchCouncil/BigVectorBench/issues)
-[![PR](https://img.shields.io/github/issues-pr/BenchCouncil/BigVectorBench.svg)]([https://github.com/BenchCouncil/BigVectorBench/issues](https://github.com/BenchCouncil/BigVectorBench/pulls))
-[![PR](https://img.shields.io/github/issues-pr-closed/BenchCouncil/BigVectorBench.svg)]([https://github.com/BenchCouncil/BigVectorBench/issues](https://github.com/BenchCouncil/BigVectorBench/pulls))
+[![PR](https://img.shields.io/github/issues-pr/BenchCouncil/BigVectorBench.svg)](<[https://github.com/BenchCouncil/BigVectorBench/issues](https://github.com/BenchCouncil/BigVectorBench/pulls)>)
+[![PR](https://img.shields.io/github/issues-pr-closed/BenchCouncil/BigVectorBench.svg)](<[https://github.com/BenchCouncil/BigVectorBench/issues](https://github.com/BenchCouncil/BigVectorBench/pulls)>)
 
 BigVectorBench is an innovative benchmark suite crafted to thoroughly evaluate the performance of vector databases. This project is born out of the realization that existing benchmarks fall short in assessing the critical capabilities of vector databases, particularly in handling heterogeneous data embeddings and executing compound queries. Our suite aims to fill this evaluation gap, providing a comprehensive framework for measuring the efficiency and capacity of vector databases in real-world scenarios.
 
@@ -22,6 +22,7 @@ git clone https://github.com/BenchCouncil/BigVectorBench.git
 Tested on: Ubuntu 20.04
 
 - Docker Engine 27.x
+
   - For installation instructions, see [Install Docker Engine](https://docs.docker.com/engine/install/).
   - Enable Nvidia GPU support for Docker, see [Nvidia Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
 

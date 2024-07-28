@@ -1,9 +1,11 @@
 """ Base class/interface for Approximate Nearest Neighbors (ANN) algorithms used in benchmarking. """
+
 from multiprocessing.pool import ThreadPool
 from typing import Any, Dict, Optional
 import psutil
 
 import numpy as np
+
 
 class BaseANN(object):
     """
@@ -35,12 +37,12 @@ class BaseANN(object):
         return psutil.Process().memory_info().rss / 1024
 
     def load_data(
-            self,
-            embeddings: np.array,
-            labels: np.ndarray | None = None,
-            label_names: list[str] | None = None,
-            label_types: list[str] | None = None,
-            ) -> None:
+        self,
+        embeddings: np.array,
+        labels: np.ndarray | None = None,
+        label_names: list[str] | None = None,
+        label_types: list[str] | None = None,
+    ) -> None:
         """
         Fit the ANN algorithm to the provided data
 
@@ -56,12 +58,7 @@ class BaseANN(object):
         Create index for the ANN algorithm
         """
 
-    def query(
-            self,
-            v : np.ndarray,
-            n : int,
-            filter_expr = None
-            ) -> list[int]:
+    def query(self, v: np.ndarray, n: int, filter_expr=None) -> list[int]:
         """
         Performs a query on the algorithm to find the nearest neighbors
 
@@ -76,11 +73,8 @@ class BaseANN(object):
         return []  # array of candidate indices
 
     def batch_query(
-            self,
-            vectors: np.ndarray,
-            n: int,
-            exprs: list | None = None
-            ) -> None:
+        self, vectors: np.ndarray, n: int, exprs: list | None = None
+    ) -> None:
         """
         Performs multiple queries at once and lets the algorithm figure out how to handle it.
 
@@ -98,7 +92,9 @@ class BaseANN(object):
         if exprs is None:
             self.res = pool.map(lambda q: self.query(q, n), vectors)
         else:
-            self.res = pool.starmap(lambda q, e: self.query(q, n, e), zip(vectors, exprs))
+            self.res = pool.starmap(
+                lambda q, e: self.query(q, n, e), zip(vectors, exprs)
+            )
 
     def get_batch_results(self) -> np.array:
         """
@@ -118,11 +114,7 @@ class BaseANN(object):
         """
         return {}
 
-    def insert(
-        self,
-        embeddings : np.ndarray,
-        labels : np.ndarray | None = None
-    ) -> None:
+    def insert(self, embeddings: np.ndarray, labels: np.ndarray | None = None) -> None:
         """
         Single insert data
 
@@ -135,10 +127,7 @@ class BaseANN(object):
         """
 
     def update(
-        self,
-        index : int,
-        embeddings : np.ndarray,
-        labels : np.ndarray | None = None
+        self, index: int, embeddings: np.ndarray, labels: np.ndarray | None = None
     ) -> None:
         """
         Single update data

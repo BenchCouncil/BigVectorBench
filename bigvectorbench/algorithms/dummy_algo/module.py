@@ -1,11 +1,13 @@
 """ Dummy algorithm that returns random indices. """
+
 import numpy as np
 
 from bigvectorbench.algorithms.base.module import BaseANN
 
 
 class DummyAlgo(BaseANN):
-    """ Dummy algorithm that returns random indices. """
+    """Dummy algorithm that returns random indices."""
+
     def __init__(self, metric):
         self.name = "DummyAlgo"
         self.len = 0

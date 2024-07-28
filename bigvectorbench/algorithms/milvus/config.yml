@@ -8,8 +8,7 @@ float:
       name: milvus-flat
       run_groups:
         FLAT:
-          args:
-            []
+          args: []
     - base_args: ["@metric", "@dimension"]
       constructor: MilvusIVFFLAT
       disabled: false
