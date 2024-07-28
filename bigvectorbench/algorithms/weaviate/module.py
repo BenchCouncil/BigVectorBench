@@ -1,4 +1,5 @@
 """ Weaviate implementation for the BigVectorBench framework. """
+
 import subprocess
 import uuid
 import time
@@ -6,7 +7,13 @@ import numpy as np
 
 import weaviate
 import weaviate.classes as wvc
-from weaviate.classes.config import Property, DataType, Configure, VectorDistances, Reconfigure
+from weaviate.classes.config import (
+    Property,
+    DataType,
+    Configure,
+    VectorDistances,
+    Reconfigure,
+)
 from weaviate.classes.query import Filter
 
 from bigvectorbench.algorithms.base.module import BaseANN
@@ -27,7 +34,7 @@ def metric_mapping(_metric: str):
     _metric_type = {
         "angular": VectorDistances.COSINE,
         "euclidean": VectorDistances.L2_SQUARED,
-        "hamming" : VectorDistances.HAMMING
+        "hamming": VectorDistances.HAMMING,
     }.get(_metric, None)
     if _metric_type is None:
         raise ValueError(f"[Weaviate] Not support metric type: {_metric}!!!")
@@ -38,10 +45,8 @@ class Weaviate(BaseANN):
     """
     Weaviate base module
     """
-    def __init__(
-            self,
-            metric : str
-        ):
+
+    def __init__(self, metric: str):
         self._metric = metric
         self._metric_type = metric_mapping(metric)
         self.start_weaviate()
@@ -94,19 +99,19 @@ class Weaviate(BaseANN):
     def create_collection(self, properties) -> None:
         """
         Create collection with schema
-        
+
         Args:
             properties (list): list of properties
         """
         raise NotImplementedError
 
     def load_data(
-            self,
-            embeddings: np.array,
-            labels: np.ndarray | None = None,
-            label_names: list[str] | None = None,
-            label_types: list[str] | None = None,
-            ) -> None:
+        self,
+        embeddings: np.array,
+        labels: np.ndarray | None = None,
+        label_names: list[str] | None = None,
+        label_types: list[str] | None = None,
+    ) -> None:
         num_labels = len(label_names) if label_names is not None else 0
         self.num_labels = num_labels
         self.label_names = label_names
@@ -119,13 +124,13 @@ class Weaviate(BaseANN):
                 "INT": DataType.INT,
                 "INT32": DataType.INT,
                 "FLOAT": DataType.NUMBER,
-                "STRING": DataType.TEXT
+                "STRING": DataType.TEXT,
             }
             for label_name, label_type in zip(label_names, label_types):
                 properties.append(
                     Property(
                         name=label_name,
-                        data_type=label_type_to_weaviate_type[label_type.upper()]
+                        data_type=label_type_to_weaviate_type[label_type.upper()],
                     )
                 )
         self.create_collection(properties)
@@ -149,8 +154,12 @@ class Weaviate(BaseANN):
                     )
                 )
             self.collection.data.insert_many(data_objects)
-        print(f"[weaviate] load {self.collection.aggregate.over_all()} data successfully!!!")
-        print(f"[weaviate] client.collections.list_all(simple=False): {self.client.collections.list_all(simple=False)}")
+        print(
+            f"[weaviate] load {self.collection.aggregate.over_all()} data successfully!!!"
+        )
+        print(
+            f"[weaviate] client.collections.list_all(simple=False): {self.client.collections.list_all(simple=False)}"
+        )
         self.num_entities = len(embeddings)
 
     def create_index(self) -> None:
@@ -166,12 +175,7 @@ class Weaviate(BaseANN):
         ids = [int(o.uuid) for o in ret.objects]
         return ids
 
-    def prepare_query(
-            self,
-            v : np.array,
-            n : int,
-            expr : str | None = None
-            ) -> None:
+    def prepare_query(self, v: np.array, n: int, expr: str | None = None) -> None:
         """
         Prepare query
 
@@ -182,13 +186,17 @@ class Weaviate(BaseANN):
         """
         self.query_vector = v.tolist()
         self.query_topk = n
-        self.query_filters = eval(convert_conditions_to_filters(expr)) if expr is not None else None
+        self.query_filters = (
+            eval(convert_conditions_to_filters(expr)) if expr is not None else None
+        )
 
     def run_prepared_query(self) -> None:
         """
         Run prepared query
         """
-        self.prepare_query_results = self.query(self.query_vector, self.query_topk, self.query_filters)
+        self.prepare_query_results = self.query(
+            self.query_vector, self.query_topk, self.query_filters
+        )
 
     def get_prepared_query_results(self) -> list[int]:
         """
@@ -200,11 +208,8 @@ class Weaviate(BaseANN):
         return self.prepare_query_results
 
     def prepare_batch_query(
-            self,
-            vectors: np.ndarray,
-            n: int,
-            exprs: list[str] | None = None
-            ) -> None:
+        self, vectors: np.ndarray, n: int, exprs: list[str] | None = None
+    ) -> None:
         """
         Prepare batch query
 
@@ -215,7 +220,11 @@ class Weaviate(BaseANN):
         """
         self.batch_query_vectors = vectors
         self.query_topk = n
-        self.batch_query_filters = [eval(convert_conditions_to_filters(expr)) for expr in exprs] if exprs is not None else None
+        self.batch_query_filters = (
+            [eval(convert_conditions_to_filters(expr)) for expr in exprs]
+            if exprs is not None
+            else None
+        )
 
     def run_prepared_batch_query(self) -> None:
         """
@@ -225,8 +234,13 @@ class Weaviate(BaseANN):
         if self.batch_query_filters is None:
             self.batch_query(self.batch_query_vectors, self.query_topk)
         else:
-            self.batch_query(self.batch_query_vectors, self.query_topk, self.batch_query_filters)
-        self.batch_latencies.extend([(time.time() - start_time) / len(self.batch_query_vectors)] * len(self.batch_query_vectors))
+            self.batch_query(
+                self.batch_query_vectors, self.query_topk, self.batch_query_filters
+            )
+        self.batch_latencies.extend(
+            [(time.time() - start_time) / len(self.batch_query_vectors)]
+            * len(self.batch_query_vectors)
+        )
         self.batch_results = super().get_batch_results()
 
     def get_batch_results(self) -> list[list[int]]:
@@ -247,11 +261,7 @@ class Weaviate(BaseANN):
         """
         return self.batch_latencies
 
-    def insert(
-        self,
-        embeddings : np.ndarray,
-        labels : np.ndarray | None = None
-    ) -> None:
+    def insert(self, embeddings: np.ndarray, labels: np.ndarray | None = None) -> None:
         """
         Single insert data
 
@@ -262,7 +272,7 @@ class Weaviate(BaseANN):
         Returns:
             None
         """
-        properties={}
+        properties = {}
         if self.num_labels > 0:
             for k in range(self.num_labels):
                 properties[self.label_names[k]] = int(labels[k])
@@ -274,10 +284,7 @@ class Weaviate(BaseANN):
         self.num_entities += 1
 
     def update(
-        self,
-        index : int,
-        embeddings : np.ndarray,
-        labels : np.ndarray | None = None
+        self, index: int, embeddings: np.ndarray, labels: np.ndarray | None = None
     ) -> None:
         """
         Single update data
@@ -324,10 +331,11 @@ class WeaviateFLAT(Weaviate):
     """
     Weaviate with FLAT index
     """
+
     def __init__(
-            self,
-            metric : str,
-        ):
+        self,
+        metric: str,
+    ):
         super().__init__(metric)
         self.name = f"WeaviateFLAT metric:{metric}"
 
@@ -338,7 +346,7 @@ class WeaviateFLAT(Weaviate):
             vector_index_config=Configure.VectorIndex.flat(
                 distance_metric=self._metric_type
             ),
-            inverted_index_config=Configure.inverted_index()
+            inverted_index_config=Configure.inverted_index(),
         )
 
 
@@ -346,11 +354,12 @@ class WeaviateHNSW(Weaviate):
     """
     Weaviate with HNSW index
     """
+
     def __init__(
-            self,
-            metric : str,
-            index_param: dict,
-        ):
+        self,
+        metric: str,
+        index_param: dict,
+    ):
         super().__init__(metric)
         self.max_connections = index_param.get("M", None)
         self.ef_construction = index_param.get("efConstruction", None)
@@ -358,7 +367,7 @@ class WeaviateHNSW(Weaviate):
     def create_collection(self, properties) -> None:
         """
         Create collection with schema
-        
+
         Args:
             properties (list): list of properties
         """
@@ -368,9 +377,9 @@ class WeaviateHNSW(Weaviate):
             vector_index_config=Configure.VectorIndex.hnsw(
                 distance_metric=self._metric_type,
                 ef_construction=self.ef_construction,
-                max_connections=self.max_connections
+                max_connections=self.max_connections,
             ),
-            inverted_index_config=Configure.inverted_index()
+            inverted_index_config=Configure.inverted_index(),
         )
 
     def set_query_arguments(self, ef):
@@ -378,9 +387,7 @@ class WeaviateHNSW(Weaviate):
         Set query arguments for weaviate query with hnsw index
         """
         self.collection.config.update(
-            vectorizer_config=Reconfigure.VectorIndex.hnsw(
-                ef=ef
-            )
+            vectorizer_config=Reconfigure.VectorIndex.hnsw(ef=ef)
         )
         self.name = f"WeaviateHNSW metric:{self._metric} max_connections:{self.max_connections} ef_construction:{self.ef_construction} ef:{ef}"
         print(f"[weaviate] set_query_arguments: {ef}")

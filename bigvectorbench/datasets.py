@@ -1,23 +1,46 @@
 """ Dataset generation and loading functions. """
+
 import os
 import random
 import tarfile
-from urllib.request import urlopen, urlretrieve
-
+from urllib.request import urlopen, urlretrieve, build_opener, install_opener
 from typing import Any, Callable, Dict, Tuple
+import gzip
+import zipfile
+import struct
 import h5py
-import numpy
+import numpy as np
+from datasets import load_dataset
+from sklearn import random_projection
+from sklearn.model_selection import train_test_split
+from sklearn.datasets import make_blobs
+from sklearn.feature_extraction.text import TfidfTransformer
+from scipy.sparse import lil_matrix
+from implicit.datasets.lastfm import get_lastfm
+from implicit.als import AlternatingLeastSquares
+from implicit.nearest_neighbours import bm25_weight
+from implicit.utils import augment_inner_product_matrix
+
+from bigvectorbench.algorithms.bruteforce.module import BruteForceBLAS
+
 
 def download(source_url: str, destination_path: str) -> None:
     """
     Downloads a file from the provided source URL to the specified destination path
     only if the file doesn't already exist at the destination.
-    
+
     Args:
         source_url (str): The URL of the file to download.
         destination_path (str): The local path where the file should be saved.
     """
     if not os.path.exists(destination_path):
+        headers = (
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36",
+        )
+        opener = build_opener()
+        opener.addheaders = [headers]
+        install_opener(opener)
         print(f"downloading {source_url} -> {destination_path}...")
         urlretrieve(source_url, destination_path)
 
@@ -25,10 +48,10 @@ def download(source_url: str, destination_path: str) -> None:
 def get_dataset_fn(dataset_name: str) -> str:
     """
     Returns the full file path for a given dataset name in the data directory.
-    
+
     Args:
         dataset_name (str): The name of the dataset.
-    
+
     Returns:
         str: The full file path of the dataset.
     """
@@ -40,21 +63,27 @@ def get_dataset_fn(dataset_name: str) -> str:
 def get_dataset(dataset_name: str) -> Tuple[h5py.File, int]:
     """
     Fetches a dataset by downloading it from a known URL or creating it locally
-    if it's not already present. The dataset file is then opened for reading, 
+    if it's not already present. The dataset file is then opened for reading,
     and the file handle and the dimension of the dataset are returned.
-    
+
     Args:
         dataset_name (str): The name of the dataset.
-    
+
     Returns:
         Tuple[h5py.File, int]: A tuple containing the opened HDF5 file object and
             the dimension of the dataset.
     """
     hdf5_filename = get_dataset_fn(dataset_name)
-    try:
+    if dataset_name in ANN_DATASETS:
         dataset_url = f"https://ann-benchmarks.com/{dataset_name}.hdf5"
+    elif dataset_name in BVB_DATASETS:
+        dataset_url = f"https://huggingface.co/datasets/Patrickcode/BigVectorBench/resolve/main/{dataset_name}.hdf5"
+        # dataset_url = f"https://hf-mirror.com/datasets/Patrickcode/BigVectorBench/resolve/main/{dataset_name}.hdf5"
+    else:
+        raise ValueError(f"Unknown dataset: {dataset_name}")
+    try:
         download(dataset_url, hdf5_filename)
-    except:
+    except Exception as e:
         print(f"Cannot download {dataset_url}")
         if dataset_name in DATASETS:
             print("Creating dataset locally")
@@ -81,23 +110,28 @@ def get_dataset(dataset_name: str) -> Tuple[h5py.File, int]:
     return hdf5_file, dimension
 
 
-def write_output(train: numpy.ndarray, test: numpy.ndarray, fn: str, distance: str, point_type: str = "float", count: int = 100) -> None:
+def write_output(
+    train: np.ndarray,
+    test: np.ndarray,
+    fn: str,
+    distance: str,
+    point_type: str = "float",
+    count: int = 100,
+) -> None:
     """
-    Writes the provided training and testing data to an HDF5 file. It also computes 
-    and stores the nearest neighbors and their distances for the test set using a 
+    Writes the provided training and testing data to an HDF5 file. It also computes
+    and stores the nearest neighbors and their distances for the test set using a
     brute-force approach.
-    
+
     Args:
-        train (numpy.ndarray): The training data.
-        test (numpy.ndarray): The testing data.
+        train (np.ndarray): The training data.
+        test (np.ndarray): The testing data.
         filename (str): The name of the HDF5 file to which data should be written.
         distance_metric (str): The distance metric to use for computing nearest neighbors.
         point_type (str, optional): The type of the data points. Defaults to "float".
-        neighbors_count (int, optional): The number of nearest neighbors to compute for 
+        neighbors_count (int, optional): The number of nearest neighbors to compute for
             each point in the test set. Defaults to 100.
     """
-    from bigvectorbench.algorithms.bruteforce.module import BruteForceBLAS
-
     with h5py.File(fn, "w") as f:
         f.attrs["type"] = "dense"
         f.attrs["distance"] = distance
@@ -129,26 +163,28 @@ def write_output(train: numpy.ndarray, test: numpy.ndarray, fn: str, distance: s
             distances_ds[i] = [dist for _, dist in res]
 
 
-"""
-param: train and test are arrays of arrays of indices.
-"""
-def write_sparse_output(train: numpy.ndarray, test: numpy.ndarray, fn: str, distance: str, dimension: int, count: int = 100) -> None:
+def write_sparse_output(
+    train: np.ndarray,
+    test: np.ndarray,
+    fn: str,
+    distance: str,
+    dimension: int,
+    count: int = 100,
+) -> None:
     """
-    Writes the provided sparse training and testing data to an HDF5 file. It also computes 
-    and stores the nearest neighbors and their distances for the test set using a 
+    Writes the provided sparse training and testing data to an HDF5 file. It also computes
+    and stores the nearest neighbors and their distances for the test set using a
     brute-force approach.
-    
+
     Args:
-        train (numpy.ndarray): The sparse training data.
-        test (numpy.ndarray): The sparse testing data.
+        train (np.ndarray): The sparse training data.
+        test (np.ndarray): The sparse testing data.
         filename (str): The name of the HDF5 file to which data should be written.
         distance_metric (str): The distance metric to use for computing nearest neighbors.
         dimension (int): The dimensionality of the data.
-        neighbors_count (int, optional): The number of nearest neighbors to compute for 
+        neighbors_count (int, optional): The number of nearest neighbors to compute for
             each point in the test set. Defaults to 100.
     """
-    from bigvectorbench.algorithms.bruteforce.module import BruteForceBLAS
-
     with h5py.File(fn, "w") as f:
         f.attrs["type"] = "sparse"
         f.attrs["distance"] = distance
@@ -158,12 +194,12 @@ def write_sparse_output(train: numpy.ndarray, test: numpy.ndarray, fn: str, dist
         print(f"test size:  {test.shape[0]} * {dimension}")
 
         # Ensure the sets are sorted
-        train = numpy.array([sorted(t) for t in train])
-        test = numpy.array([sorted(t) for t in test])
+        train = np.array([sorted(t) for t in train])
+        test = np.array([sorted(t) for t in test])
 
         # Flatten and write train and test sets
-        flat_train = numpy.concatenate(train)
-        flat_test = numpy.concatenate(test)
+        flat_train = np.concatenate(train)
+        flat_test = np.concatenate(test)
         f.create_dataset("train", data=flat_train)
         f.create_dataset("test", data=flat_test)
 
@@ -191,58 +227,31 @@ def write_sparse_output(train: numpy.ndarray, test: numpy.ndarray, fn: str, dist
             distances_ds[i] = [dist for _, dist in res]
 
 
-def train_test_split(X: numpy.ndarray, test_size: int = 10000, dimension: int = None) -> Tuple[numpy.ndarray, numpy.ndarray]:
-    """
-    Splits the provided dataset into a training set and a testing set.
-    
-    Args:
-        X (numpy.ndarray): The dataset to split.
-        test_size (int, optional): The number of samples to include in the test set. 
-            Defaults to 10000.
-        dimension (int, optional): The dimensionality of the data. If not provided, 
-            it will be inferred from the second dimension of X. Defaults to None.
-
-    Returns:
-        Tuple[numpy.ndarray, numpy.ndarray]: A tuple containing the training set and the testing set.
-    """
-    from sklearn.model_selection import train_test_split as sklearn_train_test_split
-
-    dimension = dimension if not None else X.shape[1]
-    print(f"Splitting {X.shape[0]}*{dimension} into train/test")
-    return sklearn_train_test_split(X, test_size=test_size, random_state=1)
-
-
 def glove(out_fn: str, d: int) -> None:
-    import zipfile
-
+    """glove"""
     url = "http://nlp.stanford.edu/data/glove.twitter.27B.zip"
     fn = os.path.join("data", "glove.twitter.27B.zip")
     download(url, fn)
     with zipfile.ZipFile(fn) as z:
-        print("preparing %s" % out_fn)
-        z_fn = "glove.twitter.27B.%dd.txt" % d
+        print(f"preparing {out_fn}")
+        z_fn = f"glove.twitter.27B.{d}.txt"
         X = []
         for line in z.open(z_fn):
             v = [float(x) for x in line.strip().split()[1:]]
-            X.append(numpy.array(v))
-        X_train, X_test = train_test_split(X)
-        write_output(numpy.array(X_train), numpy.array(X_test), out_fn, "angular")
+            X.append(np.array(v))
+        X_train, X_test = train_test_split(X, test_size=10000)
+        write_output(np.array(X_train), np.array(X_test), out_fn, "angular")
 
 
-def _load_texmex_vectors(f: Any, n: int, k: int) -> numpy.ndarray:
-    import struct
-
-    v = numpy.zeros((n, k))
+def _load_texmex_vectors(f: Any, n: int, k: int) -> np.ndarray:
+    v = np.zeros((n, k))
     for i in range(n):
         f.read(4)  # ignore vec length
         v[i] = struct.unpack("f" * k, f.read(k * 4))
-
     return v
 
 
-def _get_irisa_matrix(t: tarfile.TarFile, fn: str) -> numpy.ndarray:
-    import struct
-
+def _get_irisa_matrix(t: tarfile.TarFile, fn: str) -> np.ndarray:
     m = t.getmember(fn)
     f = t.extractfile(m)
     (k,) = struct.unpack("i", f.read(4))
@@ -252,8 +261,7 @@ def _get_irisa_matrix(t: tarfile.TarFile, fn: str) -> numpy.ndarray:
 
 
 def sift(out_fn: str) -> None:
-    import tarfile
-
+    """sift"""
     url = "ftp://ftp.irisa.fr/local/texmex/corpus/sift.tar.gz"
     fn = os.path.join("data", "sift.tar.tz")
     download(url, fn)
@@ -264,8 +272,7 @@ def sift(out_fn: str) -> None:
 
 
 def gist(out_fn: str) -> None:
-    import tarfile
-
+    """gist"""
     url = "ftp://ftp.irisa.fr/local/texmex/corpus/gist.tar.gz"
     fn = os.path.join("data", "gist.tar.tz")
     download(url, fn)
@@ -275,10 +282,7 @@ def gist(out_fn: str) -> None:
         write_output(train, test, out_fn, "euclidean")
 
 
-def _load_mnist_vectors(fn: str) -> numpy.ndarray:
-    import gzip
-    import struct
-
+def _load_mnist_vectors(fn: str) -> np.ndarray:
     print("parsing vectors in %s..." % fn)
     f = gzip.open(fn)
     type_code_info = {
@@ -296,30 +300,38 @@ def _load_mnist_vectors(fn: str) -> numpy.ndarray:
     dimensions = [struct.unpack("!I", f.read(4))[0] for i in range(dim_count)]
 
     entry_count = dimensions[0]
-    entry_size = numpy.product(dimensions[1:])
+    entry_size = np.product(dimensions[1:])
 
     b, format_string = type_code_info[type_code]
     vectors = []
     for i in range(entry_count):
-        vectors.append([struct.unpack(format_string, f.read(b))[0] for j in range(entry_size)])
-    return numpy.array(vectors)
+        vectors.append(
+            [struct.unpack(format_string, f.read(b))[0] for j in range(entry_size)]
+        )
+    return np.array(vectors)
 
 
 def mnist(out_fn: str) -> None:
-    download("http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz", "mnist-train.gz")  # noqa
-    download("http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz", "mnist-test.gz")  # noqa
+    """mnist"""
+    download(
+        "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz", "mnist-train.gz"
+    )
+    download(
+        "http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz", "mnist-test.gz"
+    )
     train = _load_mnist_vectors("mnist-train.gz")
     test = _load_mnist_vectors("mnist-test.gz")
     write_output(train, test, out_fn, "euclidean")
 
 
 def fashion_mnist(out_fn: str) -> None:
+    """fashion-mnist"""
     download(
-        "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/train-images-idx3-ubyte.gz",  # noqa
+        "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/train-images-idx3-ubyte.gz",
         "fashion-mnist-train.gz",
     )
     download(
-        "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/t10k-images-idx3-ubyte.gz",  # noqa
+        "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/t10k-images-idx3-ubyte.gz",
         "fashion-mnist-test.gz",
     )
     train = _load_mnist_vectors("fashion-mnist-train.gz")
@@ -331,6 +343,7 @@ def fashion_mnist(out_fn: str) -> None:
 # from http://sites.skoltech.ru/compvision/noimi/. The download logic is adapted
 # from the script https://github.com/arbabenko/GNOIMI/blob/master/downloadDeep1B.py.
 def deep_image(out_fn: str) -> None:
+    """deep-image"""
     yadisk_key = "https://yadi.sk/d/11eDCm7Dsn9GA"
     response = urlopen(
         "https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key="
@@ -338,28 +351,20 @@ def deep_image(out_fn: str) -> None:
         + "&path=/deep10M.fvecs"
     )
     response_body = response.read().decode("utf-8")
-
     dataset_url = response_body.split(",")[0][9:-1]
     filename = os.path.join("data", "deep-image.fvecs")
     download(dataset_url, filename)
-
     # In the fvecs file format, each vector is stored by first writing its
     # length as an integer, then writing its components as floats.
-    fv = numpy.fromfile(filename, dtype=numpy.float32)
-    dim = fv.view(numpy.int32)[0]
+    fv = np.fromfile(filename, dtype=np.float32)
+    dim = fv.view(np.int32)[0]
     fv = fv.reshape(-1, dim + 1)[:, 1:]
-
-    X_train, X_test = train_test_split(fv)
+    X_train, X_test = train_test_split(fv, test_size=10000)
     write_output(X_train, X_test, out_fn, "angular")
 
 
 def transform_bag_of_words(filename: str, n_dimensions: int, out_fn: str) -> None:
-    import gzip
-
-    from scipy.sparse import lil_matrix
-    from sklearn import random_projection
-    from sklearn.feature_extraction.text import TfidfTransformer
-
+    """transform_bag_of_words"""
     with gzip.open(filename, "rb") as f:
         file_content = f.readlines()
         entries = int(file_content[0])
@@ -373,65 +378,72 @@ def transform_bag_of_words(filename: str, n_dimensions: int, out_fn: str) -> Non
         print("normalizing matrix entries with tfidf...")
         B = TfidfTransformer().fit_transform(A)
         print("reducing dimensionality...")
-        C = random_projection.GaussianRandomProjection(n_components=n_dimensions).fit_transform(B)
-        X_train, X_test = train_test_split(C)
-        write_output(numpy.array(X_train), numpy.array(X_test), out_fn, "angular")
+        C = random_projection.GaussianRandomProjection(
+            n_components=n_dimensions
+        ).fit_transform(B)
+        X_train, X_test = train_test_split(C, test_size=10000)
+        write_output(np.array(X_train), np.array(X_test), out_fn, "angular")
 
 
 def nytimes(out_fn: str, n_dimensions: int) -> None:
+    """nytimes"""
     fn = "nytimes_%s.txt.gz" % n_dimensions
     download(
-        "https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.nytimes.txt.gz", fn
-    )  # noqa
+        "https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.nytimes.txt.gz",
+        fn,
+    )
     transform_bag_of_words(fn, n_dimensions, out_fn)
 
 
-def random_float(out_fn: str, n_dims: int, n_samples: int, centers: int, distance: str) -> None:
-    import sklearn.datasets
-
-    X = sklearn.datasets.make_blobs(n_samples=n_samples, n_features=n_dims, centers=centers, random_state=1)[0]
+def random_float(
+    out_fn: str, n_dims: int, n_samples: int, centers: int, distance: str
+) -> None:
+    """random-float"""
+    X = make_blobs(
+        n_samples=n_samples, n_features=n_dims, centers=centers, random_state=1
+    )[0]
     X_train, X_test = train_test_split(X, test_size=0.1)
     write_output(X_train, X_test, out_fn, distance)
 
 
 def random_bitstring(out_fn: str, n_dims: int, n_samples: int, n_queries: int) -> None:
-    import sklearn.datasets
-
-    Y = sklearn.datasets.make_blobs(n_samples=n_samples, n_features=n_dims, centers=n_queries, random_state=1)[0]
-    X = numpy.zeros((n_samples, n_dims), dtype=numpy.bool_)
+    """random-bitstring"""
+    Y = make_blobs(
+        n_samples=n_samples, n_features=n_dims, centers=n_queries, random_state=1
+    )[0]
+    X = np.zeros((n_samples, n_dims), dtype=np.bool_)
     for i, vec in enumerate(Y):
-        X[i] = numpy.array([v > 0 for v in vec], dtype=numpy.bool_)
-
+        X[i] = np.array([v > 0 for v in vec], dtype=np.bool_)
     X_train, X_test = train_test_split(X, test_size=n_queries)
     write_output(X_train, X_test, out_fn, "hamming", "bit")
 
 
 def sift_hamming(out_fn: str, fn: str) -> None:
-    import tarfile
-
+    """sift-hamming"""
     local_fn = fn + ".tar.gz"
-    # url = "http://web.stanford.edu/~maxlam/word_vectors/compressed/%s/%s.tar.gz" % (path, fn)  # noqa
-    url = "http://sss.projects.itu.dk/bigvectorbench/datasets/%s.tar.gz" % fn
+    # url = "http://web.stanford.edu/~maxlam/word_vectors/compressed/%s/%s.tar.gz" % (path, fn)
+    url = f"http://sss.projects.itu.dk/bigvectorbench/datasets/{fn}.tar.gz"
     download(url, local_fn)
-    print("parsing vectors in %s..." % local_fn)
+    print(f"parsing vectors in {local_fn}...")
     with tarfile.open(local_fn, "r:gz") as t:
         f = t.extractfile(fn)
         n_words, k = [int(z) for z in next(f).strip().split()]
-        X = numpy.zeros((n_words, k), dtype=numpy.bool_)
+        X = np.zeros((n_words, k), dtype=np.bool_)
         for i in range(n_words):
-            X[i] = numpy.array([float(z) > 0 for z in next(f).strip().split()[1:]], dtype=numpy.bool_)
+            X[i] = np.array(
+                [float(z) > 0 for z in next(f).strip().split()[1:]], dtype=np.bool_
+            )
 
         X_train, X_test = train_test_split(X, test_size=1000)
         write_output(X_train, X_test, out_fn, "hamming", "bit")
 
 
 def kosarak(out_fn: str) -> None:
-    import gzip
-
+    """kosarak"""
     local_fn = "kosarak.dat.gz"
     # only consider sets with at least min_elements many elements
     min_elements = 20
-    url = "http://fimi.uantwerpen.be/data/%s" % local_fn
+    url = f"http://fimi.uantwerpen.be/data/{local_fn}"
     download(url, local_fn)
 
     X = []
@@ -445,24 +457,25 @@ def kosarak(out_fn: str) -> None:
                 X.append(list(map(int, line.split())))
                 dimension = max(dimension, max(X[-1]) + 1)
 
-    X_train, X_test = train_test_split(numpy.array(X), test_size=500, dimension=dimension)
+    X_train, X_test = train_test_split(np.array(X), test_size=500)
     write_sparse_output(X_train, X_test, out_fn, "jaccard", dimension)
 
 
-def random_jaccard(out_fn: str, n: int = 10000, size: int = 50, universe: int = 80) -> None:
+def random_jaccard(
+    out_fn: str, n: int = 10000, size: int = 50, universe: int = 80
+) -> None:
     random.seed(1)
     l = list(range(universe))
     X = []
     for _ in range(n):
         X.append(random.sample(l, size))
 
-    X_train, X_test = train_test_split(numpy.array(X), test_size=100, dimension=universe)
+    X_train, X_test = train_test_split(np.array(X), test_size=100)
     write_sparse_output(X_train, X_test, out_fn, "jaccard", universe)
 
+
 def random_mv(out_fn: str) -> None:
-    print("preparing %s" % out_fn)
-    import numpy as np
-    from sklearn.model_selection import train_test_split
+    print(f"preparing {out_fn}")
     n = 10000
     d = 100
     X = np.random.rand(n, 4, d)
@@ -473,13 +486,24 @@ def random_mv(out_fn: str) -> None:
     print(f"train size: {X_train.shape[0]} * {X_train.shape[1]} * {X_train.shape[2]}")
     print(f"test size: {X_test.shape[0]} * {X_test.shape[1]} * {X_test.shape[2]}")
     # (1000, 1, 4, 100) - (1, 9000, 4, 100) => (1000, 9000, 4, 100)
-    distance_matrix = np.mean(np.linalg.norm(X_test[:, np.newaxis] - X_train, axis=3), axis=2)
-    print(f"distance matrix size: {distance_matrix.shape[0]} * {distance_matrix.shape[1]}")
+    distance_matrix = np.mean(
+        np.linalg.norm(X_test[:, np.newaxis] - X_train, axis=3), axis=2
+    )
+    print(
+        f"distance matrix size: {distance_matrix.shape[0]} * {distance_matrix.shape[1]}"
+    )
     nearest_indices = np.argpartition(distance_matrix, 100, axis=1)[:, :100]
-    print(f"nearest indices size: {nearest_indices.shape[0]} * {nearest_indices.shape[1]}")
+    print(
+        f"nearest indices size: {nearest_indices.shape[0]} * {nearest_indices.shape[1]}"
+    )
     nearest_indices = nearest_indices[
         np.arange(nearest_indices.shape[0])[:, None],
-        np.argsort(distance_matrix[np.arange(distance_matrix.shape[0])[:, None], nearest_indices], axis=1),
+        np.argsort(
+            distance_matrix[
+                np.arange(distance_matrix.shape[0])[:, None], nearest_indices
+            ],
+            axis=1,
+        ),
     ]
     nearest_distances = np.sort(distance_matrix, axis=1)[:, :100]
     with h5py.File(out_fn, "w") as f:
@@ -499,29 +523,28 @@ def lastfm(out_fn: str, n_dimensions: int, test_size: int = 50000) -> None:
 
     # Since the predictor is a dot product, we transform the factors first
     # as described in this
-    # paper: https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/XboxInnerProduct.pdf  # noqa
+    # paper: https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/XboxInnerProduct.pdf
     # This hopefully replicates the experiments done in this post:
-    # http://www.benfrederickson.com/approximate-nearest-neighbours-for-recommender-systems/  # noqa
+    # http://www.benfrederickson.com/approximate-nearest-neighbours-for-recommender-systems/
 
     # The dataset is from "Last.fm Dataset - 360K users":
-    # http://www.dtic.upf.edu/~ocelma/MusicRecommendationDataset/lastfm-360K.html  # noqa
+    # http://www.dtic.upf.edu/~ocelma/MusicRecommendationDataset/lastfm-360K.html
 
     # This requires the implicit package to generate the factors
     # (on my desktop/gpu this only takes 4-5 seconds to train - but
     # could take 1-2 minutes on a laptop)
-    import implicit
-    from implicit.approximate_als import augment_inner_product_matrix
-    from implicit.datasets.lastfm import get_lastfm
 
     # train an als model on the lastfm data
     _, _, play_counts = get_lastfm()
-    model = implicit.als.AlternatingLeastSquares(factors=n_dimensions)
-    model.fit(implicit.nearest_neighbours.bm25_weight(play_counts, K1=100, B=0.8))
+    model = AlternatingLeastSquares(factors=n_dimensions)
+    model.fit(bm25_weight(play_counts, K1=100, B=0.8))
 
     # transform item factors so that each one has the same norm,
     # and transform the user factors such by appending a 0 column
     _, item_factors = augment_inner_product_matrix(model.item_factors)
-    user_factors = numpy.append(model.user_factors, numpy.zeros((model.user_factors.shape[0], 1)), axis=1)
+    user_factors = np.append(
+        model.user_factors, np.zeros((model.user_factors.shape[0], 1)), axis=1
+    )
 
     # only query the first 50k users (speeds things up signficantly
     # without changing results)
@@ -532,18 +555,22 @@ def lastfm(out_fn: str, n_dimensions: int, test_size: int = 50000) -> None:
     write_output(item_factors, user_factors, out_fn, "angular")
 
 
-def movielens(fn: str, ratings_file: str, out_fn: str, separator: str = "::", ignore_header: bool = False) -> None:
-    import zipfile
-
-    url = "http://files.grouplens.org/datasets/movielens/%s" % fn
-
+def movielens(
+    fn: str,
+    ratings_file: str,
+    out_fn: str,
+    separator: str = "::",
+    ignore_header: bool = False,
+) -> None:
+    """movielens"""
+    url = f"http://files.grouplens.org/datasets/movielens/{fn}"
     download(url, fn)
     with zipfile.ZipFile(fn) as z:
         file = z.open(ratings_file)
         if ignore_header:
             file.readline()
 
-        print("preparing %s" % out_fn)
+        print(f"preparing {out_fn}")
 
         users = {}
         X = []
@@ -565,91 +592,40 @@ def movielens(fn: str, ratings_file: str, out_fn: str, separator: str = "::", ig
             X[users[userId]].append(itemId)
             dimension = max(dimension, itemId + 1)
 
-        X_train, X_test = train_test_split(numpy.array(X), test_size=500, dimension=dimension)
+        X_train, X_test = train_test_split(np.array(X), test_size=500)
         write_sparse_output(X_train, X_test, out_fn, "jaccard", dimension)
 
 
 def movielens1m(out_fn: str) -> None:
+    """movielens-1m"""
     movielens("ml-1m.zip", "ml-1m/ratings.dat", out_fn)
 
 
 def movielens10m(out_fn: str) -> None:
+    """movielens-10m"""
     movielens("ml-10m.zip", "ml-10M100K/ratings.dat", out_fn)
 
 
 def movielens20m(out_fn: str) -> None:
+    """movielens-20m"""
     movielens("ml-20m.zip", "ml-20m/ratings.csv", out_fn, ",", True)
 
-def dbpedia_entities_openai_ada002_1M(out_fn, n=None):
-    from sklearn.model_selection import train_test_split
-    from datasets import load_dataset
 
+def dbpedia_entities_openai_ada002_1M(out_fn, n=None):
+    """dbpedia-entities-openai-ada002-1M"""
     data = load_dataset("KShivendu/dbpedia-entities-openai-1M", split="train")
     if n is not None and n >= 100_000:
         data = data.select(range(n))
 
-    embeddings = data.to_pandas()['openai'].to_numpy()
-    embeddings = numpy.vstack(embeddings).reshape((-1, 1536))
+    embeddings = data.to_pandas()["openai"].to_numpy()
+    embeddings = np.vstack(embeddings).reshape((-1, 1536))
 
     X_train, X_test = train_test_split(embeddings, test_size=10_000, random_state=42)
 
     write_output(X_train, X_test, out_fn, "angular")
 
-def app_reviews(out_fn: str) -> None:
-    pass
 
-def cc_news(out_fn: str) -> None:
-    pass
-
-def ag_news(out_fn: str) -> None:
-    pass
-
-def gpt4vision(out_fn: str) -> None:
-    pass
-
-def librispeech_asr(out_fn: str) -> None:
-    pass
-
-def img_wikipedia(out_fn: str) -> None:
-    pass
-
-def amazon(out_fn: str) -> None:
-    pass
-
-def dbpedia_entities_openai3_text_embedding_3_large_3072_1M(out_fn, i, distance):
-    from sklearn.model_selection import train_test_split
-    from datasets import load_dataset
-
-    data = load_dataset("Qdrant/dbpedia-entities-openai3-text-embedding-3-large-3072-1M", split="train")
-    if i is not None and i >= 100_000:
-        data = data.select(range(i))
-
-    embeddings = data.to_pandas()["text-embedding-3-large-3072-embedding"].to_numpy()
-    embeddings = numpy.vstack(embeddings).reshape((-1, 3072))
-
-    X_train, X_test = train_test_split(embeddings, test_size=10_000, random_state=42)
-
-    write_output(X_train, X_test, out_fn, distance)
-
-def dbpedia_entities_openai3_text_embedding_3_large_1536_1M(out_fn, i, distance):
-    from sklearn.model_selection import train_test_split
-    from datasets import load_dataset
-
-    data = load_dataset("Qdrant/dbpedia-entities-openai3-text-embedding-3-large-1536-1M", split="train")
-    if i is not None and i >= 100_000:
-        data = data.select(range(i))
-
-    embeddings = data.to_pandas()["text-embedding-3-large-1536-embedding"].to_numpy()
-    embeddings = numpy.vstack(embeddings).reshape((-1, 1536))
-
-    X_train, X_test = train_test_split(embeddings, test_size=10_000, random_state=42)
-
-    write_output(X_train, X_test, out_fn, distance)
-
-def webvid(out_fn: str) -> None:
-    pass
-
-DATASETS: Dict[str, Callable[[str], None]] = {
+ANN_DATASETS: Dict[str, Callable[[str], None]] = {
     "deep-image-96-angular": deep_image,
     "fashion-mnist-784-euclidean": fashion_mnist,
     "gist-960-euclidean": gist,
@@ -658,15 +634,27 @@ DATASETS: Dict[str, Callable[[str], None]] = {
     "glove-100-angular": lambda out_fn: glove(out_fn, 100),
     "glove-200-angular": lambda out_fn: glove(out_fn, 200),
     "mnist-784-euclidean": mnist,
-    "random-xs-20-euclidean": lambda out_fn: random_float(out_fn, 20, 10000, 100, "euclidean"),
-    "random-s-100-euclidean": lambda out_fn: random_float(out_fn, 100, 100000, 1000, "euclidean"),
-    "random-xs-20-angular": lambda out_fn: random_float(out_fn, 20, 10000, 100, "angular"),
-    "random-s-100-angular": lambda out_fn: random_float(out_fn, 100, 100000, 1000, "angular"),
+    "random-xs-20-euclidean": lambda out_fn: random_float(
+        out_fn, 20, 10000, 100, "euclidean"
+    ),
+    "random-s-100-euclidean": lambda out_fn: random_float(
+        out_fn, 100, 100000, 1000, "euclidean"
+    ),
+    "random-xs-20-angular": lambda out_fn: random_float(
+        out_fn, 20, 10000, 100, "angular"
+    ),
+    "random-s-100-angular": lambda out_fn: random_float(
+        out_fn, 100, 100000, 1000, "angular"
+    ),
     "random-xs-16-hamming": lambda out_fn: random_bitstring(out_fn, 16, 10000, 100),
     "random-s-128-hamming": lambda out_fn: random_bitstring(out_fn, 128, 50000, 1000),
     "random-l-256-hamming": lambda out_fn: random_bitstring(out_fn, 256, 100000, 1000),
-    "random-s-jaccard": lambda out_fn: random_jaccard(out_fn, n=10000, size=20, universe=40),
-    "random-l-jaccard": lambda out_fn: random_jaccard(out_fn, n=100000, size=70, universe=100),
+    "random-s-jaccard": lambda out_fn: random_jaccard(
+        out_fn, n=10000, size=20, universe=40
+    ),
+    "random-l-jaccard": lambda out_fn: random_jaccard(
+        out_fn, n=100000, size=70, universe=100
+    ),
     "sift-128-euclidean": sift,
     "nytimes-256-angular": lambda out_fn: nytimes(out_fn, 256),
     "nytimes-16-angular": lambda out_fn: nytimes(out_fn, 16),
@@ -676,41 +664,120 @@ DATASETS: Dict[str, Callable[[str], None]] = {
     "movielens1m-jaccard": movielens1m,
     "movielens10m-jaccard": movielens10m,
     "movielens20m-jaccard": movielens20m,
-    "app_reviews-384-euclidean-filter": app_reviews,
-    "cc_news-384-euclidean-filter": cc_news,
-    "ag_news-384-euclidean-filter": ag_news,
-    "app_reviews-384-euclidean": app_reviews,
-    "cc_news-384-euclidean": cc_news,
-    "ag_news-384-euclidean": ag_news,
-    "gpt4vision-1024-euclidean-mm": gpt4vision,
-    "librispeech_asr-1024-euclidean-mm": librispeech_asr,
-    "librispeech_asr-1024-euclidean-mm-asr": librispeech_asr,
-    "img-wikipedia-1024-euclidean-mm": img_wikipedia,
-    "img-wikipedia-1024-euclidean-mm-ocr": img_wikipedia,
-    "amazon-384-euclidean": amazon,
-    "amazon-384-euclidean-1filter": amazon,
-    "amazon-384-euclidean-5filter": amazon,
-    "random-mv": random_mv,
-    "webvid-4-512-euclidean": webvid,
 }
 
-DATASETS.update(
+
+ANN_DATASETS.update(
     {
-        f"dbpedia-openai-ada002-{n//1000}k-angular": lambda out_fn, i=n: dbpedia_entities_openai_ada002_1M(out_fn, i)
+        f"dbpedia-openai-ada002-{n//1000}k-angular": lambda out_fn, i=n: dbpedia_entities_openai_ada002_1M(
+            out_fn, i
+        )
         for n in range(100_000, 1_100_000, 100_000)
     }
 )
-DATASETS.update(
+
+
+def bvb_dataset(out_fn: str, dataset_name: str) -> None:
+    """
+    bvb_dataset: Downloads a dataset from the BigVectorBench repository on Hugging Face Datasets Hub
+    """
+    dataset_url = f"https://huggingface.co.com/datasets/Patrickcode/BigVectorBench/resolve/main/{dataset_name}.hdf5"
+    # dataset_url = f"https://hf-mirror.com/datasets/Patrickcode/BigVectorBench/resolve/main/{dataset_name}.hdf5"
+    download(dataset_url, out_fn)
+
+
+def dbpedia_entities_openai3_text_embedding_3_large_3072_1M(out_fn, i, distance):
+    """dbpedia-entities-openai3-text-embedding-3-large-3072-1M"""
+    data = load_dataset(
+        "Qdrant/dbpedia-entities-openai3-text-embedding-3-large-3072-1M", split="train"
+    )
+    if i is not None and i >= 100_000:
+        data = data.select(range(i))
+    embeddings = data.to_pandas()["text-embedding-3-large-3072-embedding"].to_numpy()
+    embeddings = np.vstack(embeddings).reshape((-1, 3072))
+    X_train, X_test = train_test_split(embeddings, test_size=10_000, random_state=42)
+    write_output(X_train, X_test, out_fn, distance)
+
+
+def dbpedia_entities_openai3_text_embedding_3_large_1536_1M(out_fn, i, distance):
+    """dbpedia-entities-openai3-text-embedding-3-large-1536-1M"""
+    data = load_dataset(
+        "Qdrant/dbpedia-entities-openai3-text-embedding-3-large-1536-1M", split="train"
+    )
+    if i is not None and i >= 100_000:
+        data = data.select(range(i))
+    embeddings = data.to_pandas()["text-embedding-3-large-1536-embedding"].to_numpy()
+    embeddings = np.vstack(embeddings).reshape((-1, 1536))
+    X_train, X_test = train_test_split(embeddings, test_size=10_000, random_state=42)
+    write_output(X_train, X_test, out_fn, distance)
+
+
+BVB_DATASETS: Dict[str, Callable[[str], None]] = {
+    "random-mv": random_mv,
+    "ag_news-384-euclidean": lambda out_fn: bvb_dataset(
+        out_fn, "ag_news-384-euclidean"
+    ),
+    "ag_news-384-euclidean-filter": lambda out_fn: bvb_dataset(
+        out_fn, "ag_news-384-euclidean-filter"
+    ),
+    "cc_news-384-euclidean": lambda out_fn: bvb_dataset(
+        out_fn, "cc_news-384-euclidean"
+    ),
+    "cc_news-384-euclidean-filter": lambda out_fn: bvb_dataset(
+        out_fn, "cc_news-384-euclidean-filter"
+    ),
+    "app_reviews-384-euclidean": lambda out_fn: bvb_dataset(
+        out_fn, "app_reviews-384-euclidean"
+    ),
+    "app_reviews-384-euclidean-filter": lambda out_fn: bvb_dataset(
+        out_fn, "app_reviews-384-euclidean-filter"
+    ),
+    "amazon-384-euclidean": lambda out_fn: bvb_dataset(out_fn, "amazon-384-euclidean"),
+    "amazon-384-euclidean-1filter": lambda out_fn: bvb_dataset(
+        out_fn, "amazon-384-euclidean-1filter"
+    ),
+    "amazon-384-euclidean-5filter": lambda out_fn: bvb_dataset(
+        out_fn, "amazon-384-euclidean-5filter"
+    ),
+    "gpt4vision-1024-euclidean-mm": lambda out_fn: bvb_dataset(
+        out_fn, "gpt4vision-1024-euclidean-mm"
+    ),
+    "librispeech_asr-1024-euclidean-mm": lambda out_fn: bvb_dataset(
+        out_fn, "librispeech_asr-1024-euclidean-mm"
+    ),
+    "librispeech_asr-1024-euclidean-mm-asr": lambda out_fn: bvb_dataset(
+        out_fn, "librispeech_asr-1024-euclidean-mm-asr"
+    ),
+    "img-wikipedia-1024-euclidean-mm": lambda out_fn: bvb_dataset(
+        out_fn, "img-wikipedia-1024-euclidean-mm"
+    ),
+    "img-wikipedia-1024-euclidean-mm-ocr": lambda out_fn: bvb_dataset(
+        out_fn, "img-wikipedia-1024-euclidean-mm-ocr"
+    ),
+    "webvid-4-512-euclidean": lambda out_fn: bvb_dataset(
+        out_fn, "webvid-4-512-euclidean"
+    ),
+}
+
+BVB_DATASETS.update(
     {
         f"dbpedia-entities-openai3-text-embedding-3-large-3072-{n//1000}k-{distance}": lambda out_fn, i=n, d=distance: dbpedia_entities_openai3_text_embedding_3_large_3072_1M(
             out_fn, i, d
-        ) for n in range(100_000, 1_100_000, 100_000) for distance in ["angular", "euclidean"]
+        )
+        for n in range(100_000, 1_100_000, 100_000)
+        for distance in ["angular", "euclidean"]
     },
 )
-DATASETS.update(
+BVB_DATASETS.update(
     {
         f"dbpedia-entities-openai3-text-embedding-3-large-1536-{n//1000}k-{distance}": lambda out_fn, i=n, d=distance: dbpedia_entities_openai3_text_embedding_3_large_1536_1M(
             out_fn, i, d
-        ) for n in range(100_000, 1_100_000, 100_000) for distance in ["angular", "euclidean"]
+        )
+        for n in range(100_000, 1_100_000, 100_000)
+        for distance in ["angular", "euclidean"]
     }
 )
+
+DATASETS: Dict[str, Callable[[str], None]] = {}
+DATASETS.update(ANN_DATASETS)
+DATASETS.update(BVB_DATASETS)

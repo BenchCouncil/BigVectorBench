@@ -1,6 +1,7 @@
 """
 This script builds the docker images for the algorithms in the bigvectorbench/algorithms directory.
 """
+
 import argparse
 import os
 import subprocess
@@ -11,7 +12,7 @@ from bigvectorbench.main import positive_int
 
 
 def build(library, build_args):
-    """ Build the docker image for the given library. """
+    """Build the docker image for the given library."""
     print(f"Building {library}...")
     if build_args is not None and len(build_args) != 0:
         q = " ".join(["--build-arg " + x.replace(" ", "\\ ") for x in build_args])
@@ -29,22 +30,36 @@ def build(library, build_args):
 
 
 def build_multiprocess(build_args):
-    """ Wrapper for the build function to allow for multiprocessing. """
+    """Wrapper for the build function to allow for multiprocessing."""
     return build(*build_args)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--proc", default=1, type=positive_int, help="the number of process to build docker images")
-    parser.add_argument("--algorithm", metavar="NAME", help="build only the named algorithm image", default=None)
-    parser.add_argument("--build-arg", help="pass given args to all docker builds", nargs="+")
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        "--proc",
+        default=1,
+        type=positive_int,
+        help="the number of process to build docker images",
+    )
+    parser.add_argument(
+        "--algorithm",
+        metavar="NAME",
+        help="build only the named algorithm image",
+        default=None,
+    )
+    parser.add_argument(
+        "--build-arg", help="pass given args to all docker builds", nargs="+"
+    )
     args = parser.parse_args()
 
     print("Building base image...")
     subprocess.check_call(
         "docker build --rm -t bigvectorbench -f bigvectorbench/algorithms/base/Dockerfile .",
         shell=True,
-     )
+    )
     print("Building base image done.")
 
     if args.algorithm:
@@ -52,7 +67,11 @@ if __name__ == "__main__":
     elif os.getenv("LIBRARY"):
         tags = [os.getenv("LIBRARY")]
     else:
-        tags = [fn for fn in os.listdir("bigvectorbench/algorithms") if fn not in ["__init__.py", "__pycache__", "base"]]
+        tags = [
+            fn
+            for fn in os.listdir("bigvectorbench/algorithms")
+            if fn not in ["__init__.py", "__pycache__", "base"]
+        ]
     print(f"Building algorithms: {tags}...")
 
     print(f"Building algorithm images with {args.proc} processes")
@@ -60,7 +79,9 @@ if __name__ == "__main__":
         install_status = [build(tag, args.build_arg) for tag in tags]
     else:
         pool = Pool(processes=args.proc)
-        install_status = pool.map(build_multiprocess, [(tag, args.build_arg) for tag in tags])
+        install_status = pool.map(
+            build_multiprocess, [(tag, args.build_arg) for tag in tags]
+        )
         pool.close()
         pool.join()
 
@@ -68,6 +89,6 @@ if __name__ == "__main__":
 
     # Exit 1 if any of the installations fail.
     for x in install_status:
-        for (k, v) in x.items():
+        for k, v in x.items():
             if v == "fail":
                 sys.exit(1)

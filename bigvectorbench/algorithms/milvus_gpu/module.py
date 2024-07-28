@@ -20,35 +20,34 @@ def metric_mapping(_metric: str):
 
 
 class MilvusGPU_BF(Milvus):
-    """ Milvus GPU Brute Force index """
+    """Milvus GPU Brute Force index"""
+
     def __init__(self, metric, dim):
         super().__init__(metric, dim)
         self.name = f"MilvusGPU_BRUTE_FORCE metric:{self._metric}"
 
     def get_index_param(self):
-        return {
-            "index_type": "GPU_BRUTE_FORCE",
-            "metric_type": self._metric_type
-        }
+        return {"index_type": "GPU_BRUTE_FORCE", "metric_type": self._metric_type}
 
     def query(self, v, n, expr=None):
         self.search_params = {
             "metric_type": self._metric_type,
         }
         results = self.collection.search(
-            data = [v],
-            anns_field = "vector",
-            param = self.search_params,
-            expr = expr,
-            limit = n,
-            output_fields=["id"]
+            data=[v],
+            anns_field="vector",
+            param=self.search_params,
+            expr=expr,
+            limit=n,
+            output_fields=["id"],
         )
         ids = [r.entity.get("id") for r in results[0]]
         return ids
 
 
 class MilvusGPU_IVFFLAT(Milvus):
-    """ Milvus GPU IVF FLAT index """
+    """Milvus GPU IVF FLAT index"""
+
     def __init__(self, metric, dim, index_param):
         super().__init__(metric, dim)
         self._index_nlist = index_param.get("nlist", None)
@@ -56,10 +55,8 @@ class MilvusGPU_IVFFLAT(Milvus):
     def get_index_param(self):
         return {
             "index_type": "GPU_IVF_FLAT",
-            "params": {
-                "nlist": self._index_nlist
-            },
-            "metric_type": self._metric_type
+            "params": {"nlist": self._index_nlist},
+            "metric_type": self._metric_type,
         }
 
     def set_query_arguments(self, nprobe):
@@ -71,13 +68,14 @@ class MilvusGPU_IVFFLAT(Milvus):
         """
         self.search_params = {
             "metric_type": self._metric_type,
-            "params": {"nprobe": nprobe}
+            "params": {"nprobe": nprobe},
         }
         self.name = f"MilvusGPU_IVFFLAT metric:{self._metric}, index_nlist:{self._index_nlist}, search_nprobe:{nprobe}"
 
 
 class MilvusGPU_IVFPQ(Milvus):
-    """ Milvus GPU IVF PQ index """
+    """Milvus GPU IVF PQ index"""
+
     def __init__(self, metric, dim, index_param):
         super().__init__(metric, dim)
         self._index_nlist = index_param.get("nlist", None)
@@ -85,15 +83,17 @@ class MilvusGPU_IVFPQ(Milvus):
         self._index_nbits = index_param.get("nbits", None)
 
     def get_index_param(self):
-        assert self._dim % self._index_m == 0, "dimension must be able to be divided by m"
+        assert (
+            self._dim % self._index_m == 0
+        ), "dimension must be able to be divided by m"
         return {
             "index_type": "GPU_IVF_PQ",
             "params": {
                 "nlist": self._index_nlist,
                 "m": self._index_m,
-                "nbits": self._index_nbits if self._index_nbits else 8 
+                "nbits": self._index_nbits if self._index_nbits else 8,
             },
-            "metric_type": self._metric_type
+            "metric_type": self._metric_type,
         }
 
     def set_query_arguments(self, nprobe):
@@ -105,16 +105,19 @@ class MilvusGPU_IVFPQ(Milvus):
         """
         self.search_params = {
             "metric_type": self._metric_type,
-            "params": {"nprobe": nprobe}
+            "params": {"nprobe": nprobe},
         }
         self.name = f"MilvusGPU_IVFPQ metric:{self._metric}, index_nlist:{self._index_nlist}, search_nprobe:{nprobe}"
 
 
 class MilvusGPU_CAGRA(Milvus):
-    """ Milvus GPU CAGRA index """
+    """Milvus GPU CAGRA index"""
+
     def __init__(self, metric, dim, index_param):
         super().__init__(metric, dim)
-        self._index_intermediate_graph_degree = index_param.get("intermediate_graph_degree", None)
+        self._index_intermediate_graph_degree = index_param.get(
+            "intermediate_graph_degree", None
+        )
         self._index_graph_degree = index_param.get("graph_degree", None)
         self._build_algo = index_param.get("build_algo", "IVF_PQ")
 
@@ -124,12 +127,14 @@ class MilvusGPU_CAGRA(Milvus):
             "params": {
                 "intermediate_graph_degree": self._index_intermediate_graph_degree,
                 "graph_degree": self._index_graph_degree,
-                "build_algo": self._build_algo
+                "build_algo": self._build_algo,
             },
-            "metric_type": self._metric_type
+            "metric_type": self._metric_type,
         }
 
-    def set_query_arguments(self, itopk_size, search_width, min_iterations, max_iterations, team_size):
+    def set_query_arguments(
+        self, itopk_size, search_width, min_iterations, max_iterations, team_size
+    ):
         """
         Set query arguments for CAGRA index
 
@@ -147,7 +152,7 @@ class MilvusGPU_CAGRA(Milvus):
                 "search_width": search_width,
                 "min_iterations": min_iterations,
                 "max_iterations": max_iterations,
-                "team_size": team_size
-            }
+                "team_size": team_size,
+            },
         }
         self.name = f"MilvusGPU_CAGRA metric:{self._metric}, itopk_size:{itopk_size}, search_width:{search_width}, min_iterations:{min_iterations}, max_iterations:{max_iterations}, team_size:{team_size}"

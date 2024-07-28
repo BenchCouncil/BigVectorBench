@@ -47,7 +47,9 @@ def test_euclidean_dataset():
     dist_f = metrics["euclidean"].distance
     hdf5_f, n_dims = get_dataset("random-s-100-euclidean")
     n = 1000
-    for u, nns, dists in zip(hdf5_f["test"][:n], hdf5_f["neighbors"][:n], hdf5_f["distances"][:n]):
+    for u, nns, dists in zip(
+        hdf5_f["test"][:n], hdf5_f["neighbors"][:n], hdf5_f["distances"][:n]
+    ):
         for j, dist in zip(nns, dists):
             v = hdf5_f["train"][j]
             assert dist_f(u, v) == pytest.approx(dist, rel=1e-4, abs=1e-4)

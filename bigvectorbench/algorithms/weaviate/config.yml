@@ -1,6 +1,6 @@
 float:
   any:
-    - base_args: ['@metric']
+    - base_args: ["@metric"]
       constructor: WeaviateFLAT
       disabled: false
       docker_tag: bigvectorbench-weaviate
@@ -8,9 +8,8 @@ float:
       name: weaviate-flat
       run_groups:
         weaviate:
-          args:
-            []
-    - base_args: ['@metric']
+          args: []
+    - base_args: ["@metric"]
       constructor: WeaviateHNSW
       disabled: false
       docker_tag: bigvectorbench-weaviate

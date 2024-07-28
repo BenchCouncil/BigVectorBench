@@ -1,4 +1,5 @@
 """ Runner module for running the benchmarking. """
+
 import argparse
 import json
 import logging
@@ -21,16 +22,16 @@ from .results import store_results, store_insert_update_delete_latencies
 
 
 def run_individual_query(
-        algo: BaseANN,
-        X_train: np.array,
-        X_test: np.array,
-        distance: str,
-        count: int,
-        run_count: int,
-        batch: bool,
-        X_test_label : np.ndarray | None = None,
-        filter_expr_func : str | None = None
-        ) -> Tuple[dict, list]:
+    algo: BaseANN,
+    X_train: np.array,
+    X_test: np.array,
+    distance: str,
+    count: int,
+    run_count: int,
+    batch: bool,
+    X_test_label: np.ndarray | None = None,
+    filter_expr_func: str | None = None,
+) -> Tuple[dict, list]:
     """
     Run a search query using the provided algorithm and report the results.
 
@@ -49,9 +50,13 @@ def run_individual_query(
         tuple: A tuple with the attributes of the algorithm run and the results.
     """
     num_vectors = X_train.shape[1] if len(X_train.shape) == 3 else 1
-    prepared_queries = (batch and hasattr(algo, "prepare_batch_query")) or ((not batch) and hasattr(algo, "prepare_query"))
+    prepared_queries = (batch and hasattr(algo, "prepare_batch_query")) or (
+        (not batch) and hasattr(algo, "prepare_query")
+    )
 
-    assert not (batch and num_vectors > 1), "Batch mode is only supported for single-vector queries"
+    assert not (
+        batch and num_vectors > 1
+    ), "Batch mode is only supported for single-vector queries"
 
     best_search_time = float("inf")
     if filter_expr_func is not None:
@@ -64,9 +69,9 @@ def run_individual_query(
         n_items_processed = [0]
 
         def single_query(
-                v: np.array,
-                labels: Optional[np.ndarray] = None,
-                ) -> Tuple[float, List[Tuple[int, float]]]:
+            v: np.array,
+            labels: Optional[np.ndarray] = None,
+        ) -> Tuple[float, List[Tuple[int, float]]]:
             """
             Executes a single query on an instantiated, ANN algorithm.
 
@@ -75,7 +80,7 @@ def run_individual_query(
 
             Returns:
                 List[Tuple[float, List[Tuple[int, float]]]]: Tuple containing
-                    1. Total time taken for each query 
+                    1. Total time taken for each query
                     2. Result pairs consisting of (point index, distance to candidate data)
             """
             expr = None
@@ -93,24 +98,27 @@ def run_individual_query(
                 total = time.time() - start
 
             # make sure all returned indices are unique
-            assert len(candidates) == len(set(candidates)), "Implementation returned duplicated candidates"
+            assert len(candidates) == len(
+                set(candidates)
+            ), "Implementation returned duplicated candidates"
 
             candidates = [
                 (int(idx), float(metrics[distance].distance(v, X_train[idx])))
-                    for idx in candidates
+                for idx in candidates
             ]
             n_items_processed[0] += 1
             if n_items_processed[0] % 1000 == 0:
                 print(f"Processed {n_items_processed[0]}/{len(X_test)} queries...")
             if len(candidates) > count:
-                print(f"warning: algorithm {algo} returned {len(candidates)} results, \
-                      but count is only {count})")
+                print(
+                    f"warning: algorithm {algo} returned {len(candidates)} results, \
+                      but count is only {count})"
+                )
             return (total, candidates)
 
         def batch_query(
-                X: np.ndarray,
-                X_labels : np.ndarray | None = None
-                ) -> List[Tuple[float, List[Tuple[int, float]]]]:
+            X: np.ndarray, X_labels: np.ndarray | None = None
+        ) -> List[Tuple[float, List[Tuple[int, float]]]]:
             """
             Executes a batch of queries on an instantiated, ANN algorithm.
 
@@ -119,7 +127,7 @@ def run_individual_query(
 
             Returns:
                 List[Tuple[float, List[Tuple[int, float]]]]: List of tuples, each containing
-                    1. Total time taken for each query 
+                    1. Total time taken for each query
                     2. Result pairs consisting of (point index, distance to candidate data)
             """
             exprs = None
@@ -143,11 +151,15 @@ def run_individual_query(
 
             # make sure all returned indices are unique
             for res in results:
-                assert len(res) == len(set(res)), "Implementation returned duplicated candidates"
+                assert len(res) == len(
+                    set(res)
+                ), "Implementation returned duplicated candidates"
 
             candidates = [
-                [(int(idx), float(metrics[distance].distance(v, X_train[idx])))
-                 for idx in single_results]  # noqa
+                [
+                    (int(idx), float(metrics[distance].distance(v, X_train[idx])))
+                    for idx in single_results
+                ]  # noqa
                 for v, single_results in zip(X, results)
             ]
             return [(latency, v) for latency, v in zip(batch_latencies, candidates)]
@@ -161,7 +173,7 @@ def run_individual_query(
 
             Returns:
                 List[Tuple[float, List[Tuple[int, float]]]]: Tuple containing
-                    1. Total time taken for each query 
+                    1. Total time taken for each query
                     2. Result pairs consisting of (point index, distance to candidate data)
             """
             algo.prepare_multi_vector_query(vs, count)
@@ -178,8 +190,10 @@ def run_individual_query(
             if n_items_processed[0] % 1000 == 0:
                 print(f"Processed {n_items_processed[0]}/{len(X_test)} queries...")
             if len(candidates) > count:
-                print(f"warning: algorithm {algo} returned {len(candidates)} results, \
-                      but count is only {count})")
+                print(
+                    f"warning: algorithm {algo} returned {len(candidates)} results, \
+                      but count is only {count})"
+                )
             return (total, candidates)
 
         if num_vectors == 1:
@@ -192,11 +206,16 @@ def run_individual_query(
                 if batch:
                     results = batch_query(X_test, X_test_label)
                 else:
-                    results = [single_query(x, labels) for x, labels in zip(X_test, X_test_label)]
+                    results = [
+                        single_query(x, labels)
+                        for x, labels in zip(X_test, X_test_label)
+                    ]
         else:
             # multi-vector ann
             if batch:
-                raise NotImplementedError("Multi-vector ann datasets are not supported yet.")
+                raise NotImplementedError(
+                    "Multi-vector ann datasets are not supported yet."
+                )
             else:
                 results = [single_multi_vector_query(x) for x in X_test]
 
@@ -224,9 +243,7 @@ def run_individual_query(
 
 
 def run_individual_insert(
-    algo: BaseANN,
-    X_test: np.array,
-    X_test_label: np.ndarray | None = None
+    algo: BaseANN, X_test: np.array, X_test_label: np.ndarray | None = None
 ) -> list:
     """
     Run a insert query using the provided algorithm and report the results.
@@ -261,7 +278,7 @@ def run_individual_update(
     algo: BaseANN,
     num_entities: int,
     X_test: np.array,
-    X_test_label: np.ndarray | None = None
+    X_test_label: np.ndarray | None = None,
 ) -> list:
     """
     Run a update query using the provided algorithm and report the results.
@@ -295,11 +312,7 @@ def run_individual_update(
     return latencies
 
 
-def run_individual_delete(
-    algo: BaseANN,
-    num_entities: int,
-    num_deletes: int
-) -> list:
+def run_individual_delete(algo: BaseANN, num_entities: int, num_deletes: int) -> list:
     """
     Run a delete query using the provided algorithm and report the results.
 
@@ -347,8 +360,10 @@ def load_and_transform_dataset(dataset_name: str) -> Tuple:
         label_names = D.attrs["label_names"]
         label_types = D.attrs["label_types"]
         filter_expr_func = D.attrs["filter_expr_func"]
-        print(f"Got a train set of size \
-              ({X_train.shape[0]} * {dimension}) with {len(X_train_label[0])} labels")
+        print(
+            f"Got a train set of size \
+              ({X_train.shape[0]} * {dimension}) with {len(X_train_label[0])} labels"
+        )
         print(f"label names: {label_names}")
         print(f"label types: {label_types}")
         print(f"filter expression function: {filter_expr_func}")
@@ -356,15 +371,24 @@ def load_and_transform_dataset(dataset_name: str) -> Tuple:
         return (
             dataset_type,
             distance,
-            (X_train, X_train_label, X_test, X_test_label,
-             label_names, label_types, filter_expr_func),
+            (
+                X_train,
+                X_train_label,
+                X_test,
+                X_test_label,
+                label_names,
+                label_types,
+                filter_expr_func,
+            ),
         )
     elif dataset_type == "mv-ann":
         # multi-vector ann
         X_train = np.array(D["train"])
         X_test = np.array(D["test"])
         dimension = X_train[0].shape[1]
-        print(f"Got a train set of size ({X_train.shape[0]} * {X_train.shape[1]} * {dimension})")
+        print(
+            f"Got a train set of size ({X_train.shape[0]} * {X_train.shape[1]} * {dimension})"
+        )
         print(f"Got {len(X_test)} queries")
         train, test = dataset_transform(D)
         return dataset_type, distance, (train, test)
@@ -440,10 +464,8 @@ def build_index(algo: BaseANN) -> Tuple:
 
     return index_time, index_size
 
-def build_multi_index(
-        algo: BaseANN,
-        num_vectors: int = 1
-    ) -> Tuple:
+
+def build_multi_index(algo: BaseANN, num_vectors: int = 1) -> Tuple:
     """
     Builds the ANN index for a given ANN algorithm on the training data.
 
@@ -468,12 +490,8 @@ def build_multi_index(
 
 
 def run(
-        definition: Definition,
-        dataset_name: str,
-        count: int,
-        run_count: int,
-        batch: bool
-        ) -> None:
+    definition: Definition, dataset_name: str, count: int, run_count: int, batch: bool
+) -> None:
     """
     Run the algorithm benchmarking.
 
@@ -495,7 +513,15 @@ def run(
     dataset_type, distance, data = load_and_transform_dataset(dataset_name)
     X_train_label, X_test_label = None, None
     if dataset_type == "filter-ann":
-        X_train, X_train_label, X_test, X_test_label, label_names, label_types, filter_expr_func = data
+        (
+            X_train,
+            X_train_label,
+            X_test,
+            X_test_label,
+            label_names,
+            label_types,
+            filter_expr_func,
+        ) = data
     elif dataset_type == "mv-ann":
         X_train, X_test = data[0], data[1]
     elif dataset_type == "mm-ann":
@@ -509,7 +535,9 @@ def run(
 
     # Insert data
     if dataset_type == "filter-ann":
-        insert_time, data_size = insert_data(algo, X_train, X_train_label, label_names, label_types)
+        insert_time, data_size = insert_data(
+            algo, X_train, X_train_label, label_names, label_types
+        )
     elif dataset_type == "mv-ann":
         insert_time, data_size = insert_data(algo, X_train)
     elif dataset_type == "mm-ann":
@@ -525,7 +553,9 @@ def run(
     else:
         index_time, index_size = build_index(algo)
 
-    query_argument_groups = definition.query_argument_groups or [[]]  # Ensure at least one iteration
+    query_argument_groups = definition.query_argument_groups or [
+        []
+    ]  # Ensure at least one iteration
 
     for pos, query_arguments in enumerate(query_argument_groups, 1):
         print(f"Running query argument group {pos} of {len(query_argument_groups)}...")
@@ -533,33 +563,67 @@ def run(
             algo.set_query_arguments(*query_arguments)
 
         if dataset_type == "ann":
-            descriptor, results = run_individual_query(algo, X_train, X_test, distance, count, run_count, batch)
+            descriptor, results = run_individual_query(
+                algo, X_train, X_test, distance, count, run_count, batch
+            )
         elif dataset_type == "filter-ann":
-            descriptor, results = run_individual_query(algo, X_train, X_test, distance, count, run_count, batch, X_test_label, filter_expr_func)
+            descriptor, results = run_individual_query(
+                algo,
+                X_train,
+                X_test,
+                distance,
+                count,
+                run_count,
+                batch,
+                X_test_label,
+                filter_expr_func,
+            )
         elif dataset_type == "mv-ann":
-            descriptor, results = run_individual_query(algo, X_train, X_test, distance, count, run_count, batch)
+            descriptor, results = run_individual_query(
+                algo, X_train, X_test, distance, count, run_count, batch
+            )
         elif dataset_type == "mm-ann":
-            descriptor, results = run_individual_query(algo, X_train, X_test, distance, count, run_count, batch)
+            descriptor, results = run_individual_query(
+                algo, X_train, X_test, distance, count, run_count, batch
+            )
         else:
-            descriptor, results = run_individual_query(algo, X_train, X_test, distance, count, run_count, batch)
-        descriptor.update({
-            "insert_time": insert_time,
-            "data_size": data_size,
-            "index_time": index_time,
-            "index_size": index_size,
-            "build_time": insert_time + index_time,
-            "algo": definition.algorithm,
-            "dataset": dataset_name
-        })
-        store_results(dataset_name, count, definition, query_arguments, descriptor, results, batch)
+            descriptor, results = run_individual_query(
+                algo, X_train, X_test, distance, count, run_count, batch
+            )
+        descriptor.update(
+            {
+                "insert_time": insert_time,
+                "data_size": data_size,
+                "index_time": index_time,
+                "index_size": index_size,
+                "build_time": insert_time + index_time,
+                "algo": definition.algorithm,
+                "dataset": dataset_name,
+            }
+        )
+        store_results(
+            dataset_name, count, definition, query_arguments, descriptor, results, batch
+        )
 
     insert_latencies = run_individual_insert(algo, X_test, X_test_label)
-    num_entities = algo.num_entities if hasattr(algo, "num_entities") else X_train.shape[0] + X_test.shape[0]
+    num_entities = (
+        algo.num_entities
+        if hasattr(algo, "num_entities")
+        else X_train.shape[0] + X_test.shape[0]
+    )
     update_latencies = run_individual_update(algo, num_entities, X_test, X_test_label)
     delete_latencies = run_individual_delete(algo, num_entities, len(X_test))
-    store_insert_update_delete_latencies(dataset_name, count, definition, insert_latencies, update_latencies, delete_latencies)
+    store_insert_update_delete_latencies(
+        dataset_name,
+        count,
+        definition,
+        insert_latencies,
+        update_latencies,
+        delete_latencies,
+    )
 
     algo.done()
+
 
 def run_from_cmdline():
     """
@@ -575,29 +639,27 @@ def run_from_cmdline():
         "--dataset",
         choices=DATASETS.keys(),
         help="Dataset to benchmark on.",
-        required=True
+        required=True,
     )
     parser.add_argument(
-        "--algorithm",
-        help="Name of algorithm for saving the results.",
-        required=True
+        "--algorithm", help="Name of algorithm for saving the results.", required=True
     )
     parser.add_argument(
         "--module",
         help='Python module containing algorithm. E.g. "bigvectorbench.algorithms.annoy"',
-        required=True
+        required=True,
     )
     parser.add_argument(
         "--constructor",
         help='Constructor to load from module. E.g. "Annoy"',
-        required=True
+        required=True,
     )
     parser.add_argument(
         "-k",
         "--count",
         help="K: Number of nearest neighbours for the algorithm to return.",
         required=True,
-        type=int
+        type=int,
     )
     parser.add_argument(
         "--runs",
@@ -612,13 +674,13 @@ def run_from_cmdline():
     )
     parser.add_argument(
         "build",
-        help='JSON of arguments to pass to the constructor. E.g. ["angular", 100]'
+        help='JSON of arguments to pass to the constructor. E.g. ["angular", 100]',
     )
     parser.add_argument(
         "queries",
         help="JSON of arguments to pass to the queries. E.g. [100]",
         nargs="*",
-        default=[]
+        default=[],
     )
     args = parser.parse_args()
 
@@ -685,9 +747,18 @@ def run_docker(
         definition.docker_tag,
         cmd,
         volumes={
-            os.path.abspath("/var/lib/docker/image"): {"bind": "/var/lib/docker/image", "mode": "rw"},
-            os.path.abspath("/var/lib/docker/overlay2"): {"bind": "/var/lib/docker/overlay2", "mode": "rw"},
-            os.path.abspath("bigvectorbench"): {"bind": "/home/app/bigvectorbench", "mode": "ro"},
+            os.path.abspath("/var/lib/docker/image"): {
+                "bind": "/var/lib/docker/image",
+                "mode": "rw",
+            },
+            os.path.abspath("/var/lib/docker/overlay2"): {
+                "bind": "/var/lib/docker/overlay2",
+                "mode": "rw",
+            },
+            os.path.abspath("bigvectorbench"): {
+                "bind": "/home/app/bigvectorbench",
+                "mode": "ro",
+            },
             os.path.abspath("data"): {"bind": "/home/app/data", "mode": "ro"},
             os.path.abspath("results"): {"bind": "/home/app/results", "mode": "rw"},
         },
@@ -719,7 +790,9 @@ def run_docker(
         return_value = container.wait(timeout=timeout)
         _handle_container_return_value(return_value, container, logger)
     except docker.errors.APIError as e:
-        logger.error("Container.wait for container %s failed with exception", container.short_id)
+        logger.error(
+            "Container.wait for container %s failed with exception", container.short_id
+        )
         logger.error(str(e))
     finally:
         logger.info("Removing container")
@@ -729,10 +802,10 @@ def run_docker(
 def _handle_container_return_value(
     return_value: Union[Dict[str, Union[int, str]], int],
     container: docker.models.containers.Container,
-    logger: logging.Logger
+    logger: logging.Logger,
 ) -> None:
     """
-    Handles the return value of a Docker container and 
+    Handles the return value of a Docker container and
     outputs error and stdout messages (with color).
 
     Args:

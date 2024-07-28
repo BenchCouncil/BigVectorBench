@@ -1,6 +1,12 @@
 import pytest
 
-from bigvectorbench.plotting.metrics import knn, queries_per_second, index_size, build_time, candidates
+from bigvectorbench.plotting.metrics import (
+    knn,
+    queries_per_second,
+    index_size,
+    build_time,
+    candidates,
+)
 
 
 class DummyMetric:
@@ -29,10 +35,18 @@ def test_recall():
     run3 = [[2]]
     run4 = [[2, 1]]
 
-    assert knn(exact_queries, run1, 2, DummyMetric()).attrs["mean"] == pytest.approx(0.0)
-    assert knn(exact_queries, run2, 2, DummyMetric()).attrs["mean"] == pytest.approx(0.5)
-    assert knn(exact_queries, run3, 2, DummyMetric()).attrs["mean"] == pytest.approx(0.5)
-    assert knn(exact_queries, run4, 2, DummyMetric()).attrs["mean"] == pytest.approx(1.0)
+    assert knn(exact_queries, run1, 2, DummyMetric()).attrs["mean"] == pytest.approx(
+        0.0
+    )
+    assert knn(exact_queries, run2, 2, DummyMetric()).attrs["mean"] == pytest.approx(
+        0.5
+    )
+    assert knn(exact_queries, run3, 2, DummyMetric()).attrs["mean"] == pytest.approx(
+        0.5
+    )
+    assert knn(exact_queries, run4, 2, DummyMetric()).attrs["mean"] == pytest.approx(
+        1.0
+    )
 
 
 def test_queries_per_second():

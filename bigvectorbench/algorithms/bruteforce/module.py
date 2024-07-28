@@ -4,13 +4,18 @@ import sklearn.neighbors
 from bigvectorbench.distance import metrics as pd
 from bigvectorbench.algorithms.base.module import BaseANN
 
+
 class BruteForce(BaseANN):
     def __init__(self, metric):
         if metric not in ("angular", "euclidean", "hamming"):
             raise NotImplementedError("BruteForce doesn't support metric %s" % metric)
         self._metric = metric
-        metric = {"angular": "cosine", "euclidean": "l2", "hamming": "hamming"}[self._metric]
-        self._nbrs = sklearn.neighbors.NearestNeighbors(algorithm="brute", metric=metric)
+        metric = {"angular": "cosine", "euclidean": "l2", "hamming": "hamming"}[
+            self._metric
+        ]
+        self._nbrs = sklearn.neighbors.NearestNeighbors(
+            algorithm="brute", metric=metric
+        )
         self.name = "BruteForce()"
 
     def load_data(
@@ -28,7 +33,9 @@ class BruteForce(BaseANN):
         return list(self._nbrs.kneighbors([v], return_distance=False, n_neighbors=n)[0])
 
     def query_with_distances(self, v, n):
-        (distances, positions) = self._nbrs.kneighbors([v], return_distance=True, n_neighbors=n)
+        (distances, positions) = self._nbrs.kneighbors(
+            [v], return_distance=True, n_neighbors=n
+        )
         return zip(list(positions[0]), list(distances[0]))
 
 
@@ -37,10 +44,13 @@ class BruteForceBLAS(BaseANN):
 
     def __init__(self, metric, precision=np.float32):
         if metric not in ("angular", "euclidean", "hamming", "jaccard"):
-            raise NotImplementedError("BruteForceBLAS doesn't support metric %s" % metric)
+            raise NotImplementedError(
+                "BruteForceBLAS doesn't support metric %s" % metric
+            )
         elif metric == "hamming" and precision != np.bool_:
             raise NotImplementedError(
-                "BruteForceBLAS doesn't support precision %s with Hamming distances" % precision
+                "BruteForceBLAS doesn't support precision %s with Hamming distances"
+                % precision
             )
         self._metric = metric
         self._precision = precision
@@ -101,7 +111,11 @@ class BruteForceBLAS(BaseANN):
             assert False, "invalid metric"
         # partition-sort by distance, get `n` closest
         nearest_indices = np.argpartition(dists, n)[:n]
-        indices = [idx for idx in nearest_indices if pd[self._metric].distance_valid(dists[idx])]
+        indices = [
+            idx
+            for idx in nearest_indices
+            if pd[self._metric].distance_valid(dists[idx])
+        ]
 
         def fix(index):
             ep = self.index[index]

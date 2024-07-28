@@ -1,6 +1,7 @@
 """
 Plotting script for BigVectorBench
 """
+
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,11 +9,16 @@ import matplotlib as mpl
 
 from bigvectorbench.datasets import get_dataset
 from bigvectorbench.plotting.metrics import all_metrics as metrics
-from bigvectorbench.plotting.utils import (compute_metrics, create_linestyles,
-                                           create_pointset, get_plot_label)
+from bigvectorbench.plotting.utils import (
+    compute_metrics,
+    create_linestyles,
+    create_pointset,
+    get_plot_label,
+)
 from bigvectorbench.results import get_unique_algorithms, load_all_results
 
 mpl.use("Agg")
+
 
 def create_plot(all_data, raw, x_scale, y_scale, xn, yn, fn_out, linestyles, batch):
     xm, ym = (metrics[xn], metrics[yn])
@@ -73,7 +79,9 @@ def create_plot(all_data, raw, x_scale, y_scale, xn, yn, fn_out, linestyles, bat
     ax.set_title(get_plot_label(xm, ym))
     plt.gca().get_position()
     # plt.gca().set_position([box.x0, box.y0, box.width * 0.8, box.height])
-    ax.legend(handles, labels, loc="center left", bbox_to_anchor=(1, 0.5), prop={"size": 9})
+    ax.legend(
+        handles, labels, loc="center left", bbox_to_anchor=(1, 0.5), prop={"size": 9}
+    )
     plt.grid(visible=True, which="major", color="0.65", linestyle="-")
     plt.setp(ax.get_xminorticklabels(), visible=True)
 
@@ -95,26 +103,15 @@ def create_plot(all_data, raw, x_scale, y_scale, xn, yn, fn_out, linestyles, bat
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--dataset",
-        metavar="DATASET",
-        default="glove-100-angular"
-    )
-    parser.add_argument(
-        "-k",
-        "--count",
-        default=10
-    )
+    parser.add_argument("--dataset", metavar="DATASET", default="glove-100-angular")
+    parser.add_argument("-k", "--count", default=10)
     parser.add_argument(
         "--definitions",
         metavar="FILE",
         help="load algorithm definitions from FILE",
-        default="algos.yaml"
+        default="algos.yaml",
     )
-    parser.add_argument(
-        "--limit",
-        default=-1
-    )
+    parser.add_argument("--limit", default=-1)
     parser.add_argument(
         "-o",
         "--output",
@@ -125,20 +122,20 @@ if __name__ == "__main__":
         "--x-axis",
         help="Which metric to use on the X-axis",
         choices=metrics.keys(),
-        default="k-nn"
+        default="k-nn",
     )
     parser.add_argument(
         "-y",
         "--y-axis",
         help="Which metric to use on the Y-axis",
         choices=metrics.keys(),
-        default="qps"
+        default="qps",
     )
     parser.add_argument(
         "-X",
         "--x-scale",
         help="Scale to use when drawing the X-axis. Typically linear, logit or a2",
-        default="linear"
+        default="linear",
     )
     parser.add_argument(
         "-Y",
@@ -149,22 +146,21 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--raw",
-        help="Show raw results (not just Pareto frontier) in faded colors",action="store_true"
+        help="Show raw results (not just Pareto frontier) in faded colors",
+        action="store_true",
     )
-    parser.add_argument(
-        "--batch",
-        help="Plot runs in batch mode",
-        action="store_true"
-    )
+    parser.add_argument("--batch", help="Plot runs in batch mode", action="store_true")
     parser.add_argument(
         "--recompute",
         help="Clears the cache and recomputes the metrics",
-        action="store_true"
+        action="store_true",
     )
     args = parser.parse_args()
 
     if not args.output:
-        args.output = "results/%s.png" % (args.dataset + ("-batch" if args.batch else ""))
+        args.output = "results/%s.png" % (
+            args.dataset + ("-batch" if args.batch else "")
+        )
         print("writing output to %s" % args.output)
 
     dataset, _ = get_dataset(args.dataset)
@@ -172,10 +168,24 @@ if __name__ == "__main__":
     unique_algorithms = get_unique_algorithms()
     results = load_all_results(args.dataset, count, args.batch)
     linestyles = create_linestyles(sorted(unique_algorithms))
-    runs = compute_metrics(np.array(dataset["neighbors"]), results, args.x_axis, args.y_axis, args.recompute)
+    runs = compute_metrics(
+        np.array(dataset["neighbors"]),
+        results,
+        args.x_axis,
+        args.y_axis,
+        args.recompute,
+    )
     if not runs:
         raise Exception("Nothing to plot")
 
     create_plot(
-        runs, args.raw, args.x_scale, args.y_scale, args.x_axis, args.y_axis, args.output, linestyles, args.batch
+        runs,
+        args.raw,
+        args.x_scale,
+        args.y_scale,
+        args.x_axis,
+        args.y_axis,
+        args.output,
+        linestyles,
+        args.batch,
     )

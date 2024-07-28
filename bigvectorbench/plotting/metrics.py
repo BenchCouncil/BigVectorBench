@@ -2,6 +2,7 @@
 
 import numpy as np
 
+
 def get_recall_values(dataset_neighbors, run_neighbors, count):
     """
     Get recall values
@@ -12,12 +13,16 @@ def get_recall_values(dataset_neighbors, run_neighbors, count):
     :return: mean, std, recall values
     """
     recalls = np.zeros(len(run_neighbors))
-    for i, (true_neighbor, run_neighbor) in enumerate(zip(dataset_neighbors, run_neighbors)):
+    for i, (true_neighbor, run_neighbor) in enumerate(
+        zip(dataset_neighbors, run_neighbors)
+    ):
         true_neighbor = true_neighbor[:count]
         run_neighbor = run_neighbor[:count]
         tt_size = len(set(true_neighbor) & set(run_neighbor) - set([-1]))
         true_neighbor_size = len(set(true_neighbor) - set([-1]))
-        recalls[i] = tt_size / float(true_neighbor_size) if true_neighbor_size > 0 else 1
+        recalls[i] = (
+            tt_size / float(true_neighbor_size) if true_neighbor_size > 0 else 1
+        )
     return (np.mean(recalls), np.std(recalls), recalls)
 
 
@@ -52,6 +57,7 @@ def queries_per_second(times):
     """
     return 1 / np.mean(times)
 
+
 def percentile_50(times):
     """
     50th percentile
@@ -60,6 +66,7 @@ def percentile_50(times):
     :return: 50th percentile in milliseconds
     """
     return np.percentile(times, 50.0) * 1000.0
+
 
 def percentile_95(times):
     """
@@ -70,6 +77,7 @@ def percentile_95(times):
     """
     return np.percentile(times, 95.0) * 1000.0
 
+
 def percentile_99(times):
     """
     99th percentile
@@ -78,6 +86,7 @@ def percentile_99(times):
     :return: 99th percentile in milliseconds
     """
     return np.percentile(times, 99.0) * 1000.0
+
 
 def percentile_999(times):
     """
@@ -88,11 +97,13 @@ def percentile_999(times):
     """
     return np.percentile(times, 99.9) * 1000.0
 
+
 def insert_time(attrs):
     """
     Return the insert time
     """
     return attrs["insert_time"]
+
 
 def data_size(attrs):
     """
@@ -100,11 +111,13 @@ def data_size(attrs):
     """
     return attrs["data_size"]
 
+
 def index_time(attrs):
     """
     Return the time of creating the index
     """
     return attrs["index_time"]
+
 
 def index_size(attrs):
     """
@@ -112,17 +125,20 @@ def index_size(attrs):
     """
     return attrs.get("index_size", 0)
 
+
 def build_time(attrs):
     """
     Return the time of loading data and creating the index
     """
     return attrs["build_time"]
 
+
 def candidates(attrs):
     """
     Return the number of candidates generated
     """
     return attrs["candidates"]
+
 
 all_metrics = {
     "k-nn": {
@@ -143,22 +159,30 @@ all_metrics = {
     },
     "p50": {
         "description": "Percentile 50 (millis)",
-        "function": lambda true_neighbors, run_neighbors, metrics, times, run_attrs: percentile_50(times),
+        "function": lambda true_neighbors, run_neighbors, metrics, times, run_attrs: percentile_50(
+            times
+        ),
         "worst": float("inf"),
     },
     "p95": {
         "description": "Percentile 95 (millis)",
-        "function": lambda true_neighbors, run_neighbors, metrics, times, run_attrs: percentile_95(times),
+        "function": lambda true_neighbors, run_neighbors, metrics, times, run_attrs: percentile_95(
+            times
+        ),
         "worst": float("inf"),
     },
     "p99": {
         "description": "Percentile 99 (millis)",
-        "function": lambda true_neighbors, run_neighbors, metrics, times, run_attrs: percentile_99(times),
+        "function": lambda true_neighbors, run_neighbors, metrics, times, run_attrs: percentile_99(
+            times
+        ),
         "worst": float("inf"),
     },
     "p999": {
         "description": "Percentile 99.9 (millis)",
-        "function": lambda true_neighbors, run_neighbors, metrics, times, run_attrs: percentile_999(times),
+        "function": lambda true_neighbors, run_neighbors, metrics, times, run_attrs: percentile_999(
+            times
+        ),
         "worst": float("inf"),
     },
     "insert_time": {

@@ -1,4 +1,5 @@
 """ Qdrant module for BigVectorBench framework. """
+
 import subprocess
 from time import sleep, time
 import docker
@@ -9,6 +10,7 @@ from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition
 from qdrant_client.http.models import PointStruct, CollectionStatus
 
 from bigvectorbench.algorithms.base.module import BaseANN
+
 
 def metric_mapping(_metric: str):
     """
@@ -24,7 +26,7 @@ def metric_mapping(_metric: str):
     _metric_type = {
         "dot": Distance.DOT,
         "angular": Distance.COSINE,
-        "euclidean": Distance.EUCLID
+        "euclidean": Distance.EUCLID,
     }.get(_metric, None)
     if _metric_type is None:
         raise ValueError(f"[Qdrant] Not support metric type: {_metric}!!!")
@@ -32,12 +34,9 @@ def metric_mapping(_metric: str):
 
 
 class Qdrant(BaseANN):
-    """ Qdrant implementation """
-    def __init__(
-            self,
-            metric : str,
-            index_param : dict
-        ):
+    """Qdrant implementation"""
+
+    def __init__(self, metric: str, index_param: dict):
         self._metric = metric
         self._metric_type = metric_mapping(metric)
         self._collection_name = "qdrant_test"
@@ -81,17 +80,9 @@ class Qdrant(BaseANN):
         self.container = self.docker_client.containers.run(
             "qdrant/qdrant:v1.9.2",
             name=self.docker_name,
-            volumes={
-                "/tmp/qdrant_storage": {
-                    "bind": "/qdrant/storage",
-                    "mode": "z"
-                }
-            },
-            ports={
-                "6333/tcp": 6333,
-                "6334/tcp": 6334
-            },
-            detach=True
+            volumes={"/tmp/qdrant_storage": {"bind": "/qdrant/storage", "mode": "z"}},
+            ports={"6333/tcp": 6333, "6334/tcp": 6334},
+            detach=True,
         )
         print("[qdrant] docker start successfully!!!")
         sleep(10)
@@ -105,12 +96,12 @@ class Qdrant(BaseANN):
         print("[qdrant] docker stop successfully!!!")
 
     def load_data(
-            self,
-            embeddings: np.array,
-            labels: np.ndarray | None = None,
-            label_names: list[str] | None = None,
-            label_types: list[str] | None = None,
-            ) -> None:
+        self,
+        embeddings: np.array,
+        labels: np.ndarray | None = None,
+        label_names: list[str] | None = None,
+        label_types: list[str] | None = None,
+    ) -> None:
         dimensions = embeddings.shape[1]
         num_labels = len(label_names) if label_names is not None else 0
         self.num_labels = num_labels
@@ -119,14 +110,12 @@ class Qdrant(BaseANN):
         self.client.create_collection(
             collection_name=self._collection_name,
             vectors_config=VectorParams(
-                size=dimensions,
-                distance=self._metric_type,
-                on_disk=True
+                size=dimensions, distance=self._metric_type, on_disk=True
             ),
             optimizers_config=models.OptimizersConfigDiff(
                 indexing_threshold=0,
             ),
-            on_disk_payload=True
+            on_disk_payload=True,
         )
         print("[qdrant] collection created successfully!!!")
         print(f"[qdrant] Start uploading {len(embeddings)} vectors...")
@@ -137,15 +126,9 @@ class Qdrant(BaseANN):
                 if num_labels > 0:
                     for k in range(num_labels):
                         payload[label_names[k]] = int(labels[j][k])
-                points.append(PointStruct(
-                    id=j,
-                    vector=embeddings[j],
-                    payload=payload
-                ))
+                points.append(PointStruct(id=j, vector=embeddings[j], payload=payload))
             self.client.upsert(
-                collection_name=self._collection_name,
-                points=points,
-                wait=True
+                collection_name=self._collection_name, points=points, wait=True
             )
         print(f"[qdrant] Uploaded {len(embeddings)} vectors successfully!!!")
         # wait for vectors to be fully indexed
@@ -157,13 +140,15 @@ class Qdrant(BaseANN):
             else:
                 print(f"[qdrant] Point count: {collection_info.points_count}")
                 print(f"[qdrant] Stored vectors: {collection_info.vectors_count}")
-                print(f"[qdrant] Indexed vectors: {collection_info.indexed_vectors_count}")
+                print(
+                    f"[qdrant] Indexed vectors: {collection_info.indexed_vectors_count}"
+                )
                 print(f"[qdrant] Collection status: {collection_info.status}")
                 break
         self.num_entities = len(embeddings)
 
     def create_index(self):
-        """ Qdrant has already created index during data upload """
+        """Qdrant has already created index during data upload"""
         self.client.update_collection(
             collection_name=self._collection_name,
             hnsw_config=models.HnswConfigDiff(
@@ -172,11 +157,10 @@ class Qdrant(BaseANN):
             ),
             quantization_config=models.ProductQuantization(
                 product=models.ProductQuantizationConfig(
-                    compression=models.CompressionRatio.X32,
-                    always_ram=True
+                    compression=models.CompressionRatio.X32, always_ram=True
                 )
             ),
-            optimizer_config=models.OptimizersConfigDiff(indexing_threshold=20000)
+            optimizer_config=models.OptimizersConfigDiff(indexing_threshold=20000),
         )
 
     def set_query_arguments(self, ef, exact):
@@ -205,24 +189,42 @@ class Qdrant(BaseANN):
             if tokens[i] == "and":
                 i += 2
             elif tokens[i] == "or":
-                raise ValueError(f"[qdrant] we have not supported 'or' operator in expression!!!, expr: {expr}")
+                raise ValueError(
+                    f"[qdrant] we have not supported 'or' operator in expression!!!, expr: {expr}"
+                )
             elif tokens[i] in ["==", ">=", "<=", ">", "<", "!="]:
                 left = tokens[i - 1]
                 operator = tokens[i]
                 right = tokens[i + 1]
                 i += 4
                 if operator == ">=":
-                    must_filters.append(FieldCondition(key=left, range=models.Range(gte=int(right))))
+                    must_filters.append(
+                        FieldCondition(key=left, range=models.Range(gte=int(right)))
+                    )
                 elif operator == "<=":
-                    must_filters.append(FieldCondition(key=left, range=models.Range(lte=int(right))))
+                    must_filters.append(
+                        FieldCondition(key=left, range=models.Range(lte=int(right)))
+                    )
                 elif operator == ">":
-                    must_filters.append(FieldCondition(key=left, range=models.Range(gt=int(right))))
+                    must_filters.append(
+                        FieldCondition(key=left, range=models.Range(gt=int(right)))
+                    )
                 elif operator == "<":
-                    must_filters.append(FieldCondition(key=left, range=models.Range(lt=int(right))))
+                    must_filters.append(
+                        FieldCondition(key=left, range=models.Range(lt=int(right)))
+                    )
                 elif operator == "==":
-                    must_filters.append(FieldCondition(key=left, match=models.MatchValue(value=int(right))))
+                    must_filters.append(
+                        FieldCondition(
+                            key=left, match=models.MatchValue(value=int(right))
+                        )
+                    )
                 elif operator == "!=":
-                    must_not_filters.append(FieldCondition(key=left, match=models.MatchValue(value=int(right))))
+                    must_not_filters.append(
+                        FieldCondition(
+                            key=left, match=models.MatchValue(value=int(right))
+                        )
+                    )
             else:
                 raise ValueError(f"[qdrant] Unsupported operator: {tokens[i]}")
         return must_filters, must_not_filters
@@ -236,21 +238,13 @@ class Qdrant(BaseANN):
         ret = self.client.search(
             collection_name=self._collection_name,
             query_vector=v,
-            query_filter=Filter(
-                must = must_filters,
-                must_not = must_not_filters
-            ),
+            query_filter=Filter(must=must_filters, must_not=must_not_filters),
             search_params=self.search_params,
             limit=n,
         )
         return [point.id for point in ret]
 
-    def prepare_query(
-            self,
-            v : np.array,
-            n : int,
-            expr : str | None = None
-            ) -> None:
+    def prepare_query(self, v: np.array, n: int, expr: str | None = None) -> None:
         """
         Prepare query
 
@@ -262,7 +256,9 @@ class Qdrant(BaseANN):
         self.query_vector = v
         self.query_topk = n
         if expr is not None:
-            self.query_filter_must, self.query_filter_must_not = self.convert_expr_to_filter(expr)
+            self.query_filter_must, self.query_filter_must_not = (
+                self.convert_expr_to_filter(expr)
+            )
         else:
             self.query_filter_must, self.query_filter_must_not = None, None
 
@@ -274,8 +270,7 @@ class Qdrant(BaseANN):
             collection_name=self._collection_name,
             query_vector=self.query_vector,
             query_filter=Filter(
-                must = self.query_filter_must,
-                must_not = self.query_filter_must_not
+                must=self.query_filter_must, must_not=self.query_filter_must_not
             ),
             search_params=self.search_params,
             limit=self.query_topk,
@@ -292,11 +287,8 @@ class Qdrant(BaseANN):
         return self.prepare_query_results
 
     def prepare_batch_query(
-            self,
-            vectors: np.ndarray,
-            n: int,
-            exprs: list[str] | None = None
-            ) -> None:
+        self, vectors: np.ndarray, n: int, exprs: list[str] | None = None
+    ) -> None:
         """
         Prepare batch query
 
@@ -322,16 +314,19 @@ class Qdrant(BaseANN):
                     models.SearchRequest(
                         vector=vectors[j],
                         filter=Filter(
-                            must=batch_query_filters_must[j]
+                            must=(
+                                batch_query_filters_must[j]
                                 if batch_query_filters_must is not None
-                                else [],
-                            must_not=
+                                else []
+                            ),
+                            must_not=(
                                 batch_query_filters_must_not[j]
                                 if batch_query_filters_must_not is not None
-                                else [],
+                                else []
+                            ),
                         ),
                         params=self.search_params,
-                        limit=n
+                        limit=n,
                     )
                 )
             self.batch_search_queries.append(search_queries)
@@ -343,11 +338,12 @@ class Qdrant(BaseANN):
         for search_queries in self.batch_search_queries:
             start = time()
             ret = self.client.search_batch(
-                collection_name=self._collection_name,
-                requests=search_queries
+                collection_name=self._collection_name, requests=search_queries
             )
             end = time()
-            self.batch_latencies.extend([(end - start) / len(search_queries)] * len(search_queries))
+            self.batch_latencies.extend(
+                [(end - start) / len(search_queries)] * len(search_queries)
+            )
             for result in ret:
                 self.batch_results.append([point.id for point in result])
 
@@ -375,11 +371,7 @@ class Qdrant(BaseANN):
         self.client.close()
         self.stop_container()
 
-    def insert(
-        self,
-        embeddings : np.ndarray,
-        labels : np.ndarray | None = None
-    ) -> None:
+    def insert(self, embeddings: np.ndarray, labels: np.ndarray | None = None) -> None:
         """
         Single insert data
 
@@ -395,23 +387,14 @@ class Qdrant(BaseANN):
             assert len(labels) == self.num_labels
             for i in range(self.num_labels):
                 payload[self.label_names[i]] = int(labels[i])
-        point = PointStruct(
-            id=self.num_entities,
-            vector=embeddings,
-            payload=payload
-        )
+        point = PointStruct(id=self.num_entities, vector=embeddings, payload=payload)
         self.client.upsert(
-            collection_name=self._collection_name,
-            points=[point],
-            wait=True
+            collection_name=self._collection_name, points=[point], wait=True
         )
         self.num_entities += 1
 
     def update(
-        self,
-        index : int,
-        embeddings : np.ndarray,
-        labels : np.ndarray | None = None
+        self, index: int, embeddings: np.ndarray, labels: np.ndarray | None = None
     ) -> None:
         """
         Single update data
@@ -429,15 +412,9 @@ class Qdrant(BaseANN):
             assert len(labels) == self.num_labels
             for i in range(self.num_labels):
                 payload[self.label_names[i]] = int(labels[i])
-        point = PointStruct(
-            id=index,
-            vector=embeddings,
-            payload=payload
-        )
+        point = PointStruct(id=index, vector=embeddings, payload=payload)
         self.client.upsert(
-            collection_name=self._collection_name,
-            points=[point],
-            wait=True
+            collection_name=self._collection_name, points=[point], wait=True
         )
 
     def delete(
@@ -456,8 +433,6 @@ class Qdrant(BaseANN):
         # print(f"[qdrant] delete index: {index}")
         self.client.delete(
             collection_name=self._collection_name,
-            points_selector=models.PointIdsList(
-                points=[int(index)]
-            ),
-            wait=True
+            points_selector=models.PointIdsList(points=[int(index)]),
+            wait=True,
         )
