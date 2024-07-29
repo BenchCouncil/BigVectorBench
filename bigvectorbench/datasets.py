@@ -74,7 +74,7 @@ def get_dataset(dataset_name: str) -> Tuple[h5py.File, int]:
             the dimension of the dataset.
     """
     hdf5_filename = get_dataset_fn(dataset_name)
-    if dataset_name in ANN_DATASETS:
+    if dataset_name in ANN_DATASETS or dataset_name in RANDOM_DATASETS:
         dataset_url = f"https://ann-benchmarks.com/{dataset_name}.hdf5"
     elif dataset_name in BVB_DATASETS:
         dataset_url = f"https://huggingface.co/datasets/Patrickcode/BigVectorBench/resolve/main/{dataset_name}.hdf5"
