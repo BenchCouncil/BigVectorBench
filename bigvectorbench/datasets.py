@@ -74,7 +74,7 @@ def get_dataset(dataset_name: str) -> Tuple[h5py.File, int]:
             the dimension of the dataset.
     """
     hdf5_filename = get_dataset_fn(dataset_name)
-    if dataset_name in ANN_DATASETS:
+    if dataset_name in ANN_DATASETS or dataset_name in RANDOM_DATASETS:
         dataset_url = f"https://ann-benchmarks.com/{dataset_name}.hdf5"
     elif dataset_name in BVB_DATASETS:
         dataset_url = f"https://huggingface.co/datasets/Patrickcode/BigVectorBench/resolve/main/{dataset_name}.hdf5"
@@ -83,7 +83,7 @@ def get_dataset(dataset_name: str) -> Tuple[h5py.File, int]:
         raise ValueError(f"Unknown dataset: {dataset_name}")
     try:
         download(dataset_url, hdf5_filename)
-    except Exception as e:
+    except Exception:
         print(f"Cannot download {dataset_url}")
         if dataset_name in DATASETS:
             print("Creating dataset locally")
@@ -227,6 +227,85 @@ def write_sparse_output(
             distances_ds[i] = [dist for _, dist in res]
 
 
+def random_float(
+    out_fn: str, n_dims: int, n_samples: int, centers: int, distance: str
+) -> None:
+    """random-float"""
+    X = make_blobs(
+        n_samples=n_samples, n_features=n_dims, centers=centers, random_state=1
+    )[0]
+    X_train, X_test = train_test_split(X, test_size=0.1)
+    write_output(X_train, X_test, out_fn, distance)
+
+
+def random_bitstring(out_fn: str, n_dims: int, n_samples: int, n_queries: int) -> None:
+    """random-bitstring"""
+    Y = make_blobs(
+        n_samples=n_samples, n_features=n_dims, centers=n_queries, random_state=1
+    )[0]
+    X = np.zeros((n_samples, n_dims), dtype=np.bool_)
+    for i, vec in enumerate(Y):
+        X[i] = np.array([v > 0 for v in vec], dtype=np.bool_)
+    X_train, X_test = train_test_split(X, test_size=n_queries)
+    write_output(X_train, X_test, out_fn, "hamming", "bit")
+
+
+def random_jaccard(
+    out_fn: str, n: int = 10000, size: int = 50, universe: int = 80
+) -> None:
+    """random jaccard dataset"""
+    random.seed(1)
+    l = list(range(universe))
+    X = []
+    for _ in range(n):
+        X.append(random.sample(l, size))
+
+    X_train, X_test = train_test_split(np.array(X), test_size=100)
+    write_sparse_output(X_train, X_test, out_fn, "jaccard", universe)
+
+
+def random_mv(out_fn: str) -> None:
+    """random multi-vector dataset"""
+    print(f"preparing {out_fn}")
+    n = 10000
+    d = 100
+    X = np.random.rand(n, 4, d)
+    print(f"data size: {X.shape[0]} * {X.shape[1]} * {X.shape[2]}")
+    X_train, X_test = train_test_split(X, test_size=1000, random_state=42)
+    X_train = np.ascontiguousarray(X_train)
+    X_test = np.ascontiguousarray(X_test)
+    print(f"train size: {X_train.shape[0]} * {X_train.shape[1]} * {X_train.shape[2]}")
+    print(f"test size: {X_test.shape[0]} * {X_test.shape[1]} * {X_test.shape[2]}")
+    # (1000, 1, 4, 100) - (1, 9000, 4, 100) => (1000, 9000, 4, 100)
+    distance_matrix = np.mean(
+        np.linalg.norm(X_test[:, np.newaxis] - X_train, axis=3), axis=2
+    )
+    print(
+        f"distance matrix size: {distance_matrix.shape[0]} * {distance_matrix.shape[1]}"
+    )
+    nearest_indices = np.argpartition(distance_matrix, 100, axis=1)[:, :100]
+    print(
+        f"nearest indices size: {nearest_indices.shape[0]} * {nearest_indices.shape[1]}"
+    )
+    nearest_indices = nearest_indices[
+        np.arange(nearest_indices.shape[0])[:, None],
+        np.argsort(
+            distance_matrix[
+                np.arange(distance_matrix.shape[0])[:, None], nearest_indices
+            ],
+            axis=1,
+        ),
+    ]
+    nearest_distances = np.sort(distance_matrix, axis=1)[:, :100]
+    with h5py.File(out_fn, "w") as f:
+        f.attrs["type"] = "mv-ann"
+        f.attrs["distance"] = "euclidean"
+        f.create_dataset("train", data=X_train, dtype="float32")
+        f.create_dataset("test", data=X_test, dtype="float32")
+        f.create_dataset("neighbors", data=nearest_indices, dtype="int32")
+        f.create_dataset("distances", data=nearest_distances, dtype="float32")
+
+
 def glove(out_fn: str, d: int) -> None:
     """glove"""
     url = "http://nlp.stanford.edu/data/glove.twitter.27B.zip"
@@ -283,7 +362,7 @@ def gist(out_fn: str) -> None:
 
 
 def _load_mnist_vectors(fn: str) -> np.ndarray:
-    print("parsing vectors in %s..." % fn)
+    print(f"parsing vectors in {fn}...")
     f = gzip.open(fn)
     type_code_info = {
         0x08: (1, "!B"),
@@ -387,7 +466,7 @@ def transform_bag_of_words(filename: str, n_dimensions: int, out_fn: str) -> Non
 
 def nytimes(out_fn: str, n_dimensions: int) -> None:
     """nytimes"""
-    fn = "nytimes_%s.txt.gz" % n_dimensions
+    fn = f"nytimes_{n_dimensions}.txt.gz"
     download(
         "https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.nytimes.txt.gz",
         fn,
@@ -395,33 +474,10 @@ def nytimes(out_fn: str, n_dimensions: int) -> None:
     transform_bag_of_words(fn, n_dimensions, out_fn)
 
 
-def random_float(
-    out_fn: str, n_dims: int, n_samples: int, centers: int, distance: str
-) -> None:
-    """random-float"""
-    X = make_blobs(
-        n_samples=n_samples, n_features=n_dims, centers=centers, random_state=1
-    )[0]
-    X_train, X_test = train_test_split(X, test_size=0.1)
-    write_output(X_train, X_test, out_fn, distance)
-
-
-def random_bitstring(out_fn: str, n_dims: int, n_samples: int, n_queries: int) -> None:
-    """random-bitstring"""
-    Y = make_blobs(
-        n_samples=n_samples, n_features=n_dims, centers=n_queries, random_state=1
-    )[0]
-    X = np.zeros((n_samples, n_dims), dtype=np.bool_)
-    for i, vec in enumerate(Y):
-        X[i] = np.array([v > 0 for v in vec], dtype=np.bool_)
-    X_train, X_test = train_test_split(X, test_size=n_queries)
-    write_output(X_train, X_test, out_fn, "hamming", "bit")
-
-
 def sift_hamming(out_fn: str, fn: str) -> None:
     """sift-hamming"""
     local_fn = fn + ".tar.gz"
-    # url = "http://web.stanford.edu/~maxlam/word_vectors/compressed/%s/%s.tar.gz" % (path, fn)
+    # url = f"http://web.stanford.edu/~maxlam/word_vectors/compressed/{path}/{fn}.tar.gz"
     url = f"http://sss.projects.itu.dk/bigvectorbench/datasets/{fn}.tar.gz"
     download(url, local_fn)
     print(f"parsing vectors in {local_fn}...")
@@ -459,60 +515,6 @@ def kosarak(out_fn: str) -> None:
 
     X_train, X_test = train_test_split(np.array(X), test_size=500)
     write_sparse_output(X_train, X_test, out_fn, "jaccard", dimension)
-
-
-def random_jaccard(
-    out_fn: str, n: int = 10000, size: int = 50, universe: int = 80
-) -> None:
-    random.seed(1)
-    l = list(range(universe))
-    X = []
-    for _ in range(n):
-        X.append(random.sample(l, size))
-
-    X_train, X_test = train_test_split(np.array(X), test_size=100)
-    write_sparse_output(X_train, X_test, out_fn, "jaccard", universe)
-
-
-def random_mv(out_fn: str) -> None:
-    print(f"preparing {out_fn}")
-    n = 10000
-    d = 100
-    X = np.random.rand(n, 4, d)
-    print(f"data size: {X.shape[0]} * {X.shape[1]} * {X.shape[2]}")
-    X_train, X_test = train_test_split(X, test_size=1000, random_state=42)
-    X_train = np.ascontiguousarray(X_train)
-    X_test = np.ascontiguousarray(X_test)
-    print(f"train size: {X_train.shape[0]} * {X_train.shape[1]} * {X_train.shape[2]}")
-    print(f"test size: {X_test.shape[0]} * {X_test.shape[1]} * {X_test.shape[2]}")
-    # (1000, 1, 4, 100) - (1, 9000, 4, 100) => (1000, 9000, 4, 100)
-    distance_matrix = np.mean(
-        np.linalg.norm(X_test[:, np.newaxis] - X_train, axis=3), axis=2
-    )
-    print(
-        f"distance matrix size: {distance_matrix.shape[0]} * {distance_matrix.shape[1]}"
-    )
-    nearest_indices = np.argpartition(distance_matrix, 100, axis=1)[:, :100]
-    print(
-        f"nearest indices size: {nearest_indices.shape[0]} * {nearest_indices.shape[1]}"
-    )
-    nearest_indices = nearest_indices[
-        np.arange(nearest_indices.shape[0])[:, None],
-        np.argsort(
-            distance_matrix[
-                np.arange(distance_matrix.shape[0])[:, None], nearest_indices
-            ],
-            axis=1,
-        ),
-    ]
-    nearest_distances = np.sort(distance_matrix, axis=1)[:, :100]
-    with h5py.File(out_fn, "w") as f:
-        f.attrs["type"] = "mv-ann"
-        f.attrs["distance"] = "euclidean"
-        f.create_dataset("train", data=X_train, dtype="float32")
-        f.create_dataset("test", data=X_test, dtype="float32")
-        f.create_dataset("neighbors", data=nearest_indices, dtype="int32")
-        f.create_dataset("distances", data=nearest_distances, dtype="float32")
 
 
 def lastfm(out_fn: str, n_dimensions: int, test_size: int = 50000) -> None:
@@ -625,58 +627,6 @@ def dbpedia_entities_openai_ada002_1M(out_fn, n=None):
     write_output(X_train, X_test, out_fn, "angular")
 
 
-ANN_DATASETS: Dict[str, Callable[[str], None]] = {
-    "deep-image-96-angular": deep_image,
-    "fashion-mnist-784-euclidean": fashion_mnist,
-    "gist-960-euclidean": gist,
-    "glove-25-angular": lambda out_fn: glove(out_fn, 25),
-    "glove-50-angular": lambda out_fn: glove(out_fn, 50),
-    "glove-100-angular": lambda out_fn: glove(out_fn, 100),
-    "glove-200-angular": lambda out_fn: glove(out_fn, 200),
-    "mnist-784-euclidean": mnist,
-    "random-xs-20-euclidean": lambda out_fn: random_float(
-        out_fn, 20, 10000, 100, "euclidean"
-    ),
-    "random-s-100-euclidean": lambda out_fn: random_float(
-        out_fn, 100, 100000, 1000, "euclidean"
-    ),
-    "random-xs-20-angular": lambda out_fn: random_float(
-        out_fn, 20, 10000, 100, "angular"
-    ),
-    "random-s-100-angular": lambda out_fn: random_float(
-        out_fn, 100, 100000, 1000, "angular"
-    ),
-    "random-xs-16-hamming": lambda out_fn: random_bitstring(out_fn, 16, 10000, 100),
-    "random-s-128-hamming": lambda out_fn: random_bitstring(out_fn, 128, 50000, 1000),
-    "random-l-256-hamming": lambda out_fn: random_bitstring(out_fn, 256, 100000, 1000),
-    "random-s-jaccard": lambda out_fn: random_jaccard(
-        out_fn, n=10000, size=20, universe=40
-    ),
-    "random-l-jaccard": lambda out_fn: random_jaccard(
-        out_fn, n=100000, size=70, universe=100
-    ),
-    "sift-128-euclidean": sift,
-    "nytimes-256-angular": lambda out_fn: nytimes(out_fn, 256),
-    "nytimes-16-angular": lambda out_fn: nytimes(out_fn, 16),
-    "lastfm-64-dot": lambda out_fn: lastfm(out_fn, 64),
-    "sift-256-hamming": lambda out_fn: sift_hamming(out_fn, "sift.hamming.256"),
-    "kosarak-jaccard": kosarak,
-    "movielens1m-jaccard": movielens1m,
-    "movielens10m-jaccard": movielens10m,
-    "movielens20m-jaccard": movielens20m,
-}
-
-
-ANN_DATASETS.update(
-    {
-        f"dbpedia-openai-ada002-{n//1000}k-angular": lambda out_fn, i=n: dbpedia_entities_openai_ada002_1M(
-            out_fn, i
-        )
-        for n in range(100_000, 1_100_000, 100_000)
-    }
-)
-
-
 def bvb_dataset(out_fn: str, dataset_name: str) -> None:
     """
     bvb_dataset: Downloads a dataset from the BigVectorBench repository on Hugging Face Datasets Hub
@@ -712,8 +662,68 @@ def dbpedia_entities_openai3_text_embedding_3_large_1536_1M(out_fn, i, distance)
     write_output(X_train, X_test, out_fn, distance)
 
 
-BVB_DATASETS: Dict[str, Callable[[str], None]] = {
+RANDOM_DATASETS: Dict[str, Callable[[str], None]] = {
+    "random-xs-20-euclidean": lambda out_fn: random_float(
+        out_fn, 20, 10000, 100, "euclidean"
+    ),
+    "random-xs-32-euclidean": lambda out_fn: random_float(
+        out_fn, 32, 10000, 100, "euclidean"
+    ),
+    "random-s-100-euclidean": lambda out_fn: random_float(
+        out_fn, 100, 100000, 1000, "euclidean"
+    ),
+    "random-xs-20-angular": lambda out_fn: random_float(
+        out_fn, 20, 10000, 100, "angular"
+    ),
+    "random-xs-32-angular": lambda out_fn: random_float(
+        out_fn, 32, 10000, 100, "angular"
+    ),
+    "random-s-100-angular": lambda out_fn: random_float(
+        out_fn, 100, 100000, 1000, "angular"
+    ),
+    "random-xs-16-hamming": lambda out_fn: random_bitstring(out_fn, 16, 10000, 100),
+    "random-s-128-hamming": lambda out_fn: random_bitstring(out_fn, 128, 50000, 1000),
+    "random-l-256-hamming": lambda out_fn: random_bitstring(out_fn, 256, 100000, 1000),
+    "random-s-jaccard": lambda out_fn: random_jaccard(
+        out_fn, n=10000, size=20, universe=40
+    ),
+    "random-l-jaccard": lambda out_fn: random_jaccard(
+        out_fn, n=100000, size=70, universe=100
+    ),
     "random-mv": random_mv,
+}
+
+
+ANN_DATASETS: Dict[str, Callable[[str], None]] = {
+    "deep-image-96-angular": deep_image,
+    "fashion-mnist-784-euclidean": fashion_mnist,
+    "gist-960-euclidean": gist,
+    "glove-25-angular": lambda out_fn: glove(out_fn, 25),
+    "glove-50-angular": lambda out_fn: glove(out_fn, 50),
+    "glove-100-angular": lambda out_fn: glove(out_fn, 100),
+    "glove-200-angular": lambda out_fn: glove(out_fn, 200),
+    "mnist-784-euclidean": mnist,
+    "sift-128-euclidean": sift,
+    "nytimes-256-angular": lambda out_fn: nytimes(out_fn, 256),
+    "nytimes-16-angular": lambda out_fn: nytimes(out_fn, 16),
+    "lastfm-64-dot": lambda out_fn: lastfm(out_fn, 64),
+    "sift-256-hamming": lambda out_fn: sift_hamming(out_fn, "sift.hamming.256"),
+    "kosarak-jaccard": kosarak,
+    "movielens1m-jaccard": movielens1m,
+    "movielens10m-jaccard": movielens10m,
+    "movielens20m-jaccard": movielens20m,
+}
+ANN_DATASETS.update(
+    {
+        f"dbpedia-openai-ada002-{n//1000}k-angular": lambda out_fn, i=n: dbpedia_entities_openai_ada002_1M(
+            out_fn, i
+        )
+        for n in range(100_000, 1_100_000, 100_000)
+    }
+)
+
+
+BVB_DATASETS: Dict[str, Callable[[str], None]] = {
     "ag_news-384-euclidean": lambda out_fn: bvb_dataset(
         out_fn, "ag_news-384-euclidean"
     ),
@@ -779,5 +789,6 @@ BVB_DATASETS.update(
 )
 
 DATASETS: Dict[str, Callable[[str], None]] = {}
+DATASETS.update(RANDOM_DATASETS)
 DATASETS.update(ANN_DATASETS)
 DATASETS.update(BVB_DATASETS)
