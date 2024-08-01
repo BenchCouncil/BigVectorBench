@@ -163,6 +163,103 @@ def write_output(
             distances_ds[i] = [dist for _, dist in res]
 
 
+def write_filter_output(
+    fn: str,
+    train_vec: np.ndarray,
+    test_vec: np.ndarray,
+    train_label: np.ndarray,
+    test_label: np.ndarray,
+    distance: str,
+    filter_expr_func: str,
+    label_names: list[str],
+    label_types: list[str],
+    point_type: str = "float",
+    count: int = 100,
+) -> None:
+    """
+    Writes the provided training and testing data to an HDF5 file. It also computes
+    and stores the nearest neighbors and their distances for the test set using a
+    brute-force approach.
+
+    Args:
+        fn (str): The name of the HDF5 file to which data should be written.
+        train_vec (np.ndarray): The training data.
+        test_vec (np.ndarray): The testing data.
+        train_label (np.ndarray): The training labels.
+        test_label (np.ndarray): The testing labels.
+        distance (str): The distance metric to use for computing nearest neighbors.
+        filter_expr_func (str): The filter expression function.
+        label_names (list[str]): The names of the labels.
+        label_types (list[str]): The types of the labels.
+        point_type (str, optional): The type of the data points. Defaults to "float".
+        count (int, optional): The number of nearest neighbors to compute for
+            each point in the test set. Defaults to 100.
+    """
+    with h5py.File(fn, "w") as f:
+        f.attrs["type"] = "filter-ann"
+        f.attrs["distance"] = distance
+        f.attrs["dimension"] = len(train_vec[0])
+        f.attrs["point_type"] = point_type
+        f.attrs["label_names"] = label_names
+        f.attrs["label_types"] = label_types
+        f.attrs["filter_expr_func"] = filter_expr_func
+        print(f"train size: {train_vec.shape[0]} * {train_vec.shape[1]}")
+        print(f"test size:  {test_vec.shape[0]} * {test_vec.shape[1]}")
+        f.create_dataset("train_vec", data=train_vec)
+        f.create_dataset("test_vec", data=test_vec)
+        f.create_dataset("train_label", data=train_label)
+        f.create_dataset("test_label", data=test_label)
+
+        # Create datasets for neighbors and distances
+        neighbors_ds = f.create_dataset("neighbors", (len(test_vec), count), dtype=int)
+        distances_ds = f.create_dataset(
+            "distances", (len(test_vec), count), dtype=float
+        )
+
+        # Fit the brute-force k-NN model
+        bf = BruteForceBLAS(distance, precision=train_vec.dtype)
+        bf.fit(train_vec, train_label, label_names, label_types)
+
+        # Execute the filter expression function
+        exec(filter_expr_func, globals())
+        filter_expr = globals()["filter_expr"]
+
+        # from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        # def process_query(i, x, labels, count, filter_expr, bf):
+        #     expr = filter_expr(*labels)
+        #     res = list(bf.query_with_distances(x, count, expr))
+        #     res.sort(key=lambda t: t[-1])
+        #     return i, [idx for idx, _ in res], [dist for _, dist in res]
+
+        # with ThreadPoolExecutor(max_workers=1000) as executor:
+        #     future_to_index = {
+        #         executor.submit(process_query, i, x, labels, count, filter_expr, bf): i
+        #         for i, (x, labels) in enumerate(zip(test_vec, test_label))
+        #     }
+
+        #     for future in as_completed(future_to_index):
+        #         i, neighbors, distances = future.result()
+        #         neighbors_ds[i] = neighbors
+        #         distances_ds[i] = distances
+
+        #         if i % 1000 == 0:
+        #             print(f"{i}/{len(test_vec)}...")
+
+        for i, (x, labels) in enumerate(zip(test_vec, test_label)):
+            if i % 1000 == 0:
+                print(f"{i}/{len(test_vec)}...")
+
+            # Query the model and sort results by distance
+            expr = filter_expr(*labels)
+            res = list(bf.query_with_distances(x, count, expr))
+            res.sort(key=lambda t: t[-1])
+
+            # Save neighbors indices and distances
+            neighbors_ds[i] = [idx for idx, _ in res]
+            distances_ds[i] = [dist for _, dist in res]
+
+
 def write_sparse_output(
     train: np.ndarray,
     test: np.ndarray,
@@ -262,6 +359,49 @@ def random_jaccard(
 
     X_train, X_test = train_test_split(np.array(X), test_size=100)
     write_sparse_output(X_train, X_test, out_fn, "jaccard", universe)
+
+
+def random_filter(
+    out_fn: str,
+    n_dims: int,
+    n_samples: int,
+    centers: int,
+    n_filters: int,
+    distance: str = "euclidean",
+) -> None:
+    """Gen random filter dataset with n_filters filters"""
+    X = make_blobs(
+        n_samples=n_samples, n_features=n_dims, centers=centers, random_state=1
+    )[0]
+    label_names = [f"label_{i}" for i in range(n_filters)]
+    label_types = ["int32" for i in range(n_filters)]
+    print(f"labels_names: {label_names}")
+    print(f"labels_types: {label_types}")
+    filter_expr = " and ".join(
+        [
+            f"{label_name} <= " + "{" + f"{label_name}" + "}"
+            for label_name in label_names
+        ]
+    )
+    print(f"filter_expr: {filter_expr}")
+    filter_expr_func = "def filter_expr(" + ", ".join(label_names) + "):\n"
+    filter_expr_func += '    return f"' + filter_expr + '"\n'
+    print(f"filter_expr_func: {filter_expr_func}")
+    filters = np.random.randint(0, 100, (n_samples, n_filters))
+    X_train, X_test, train_label, test_label = train_test_split(
+        X, filters, test_size=0.1, random_state=42
+    )
+    write_filter_output(
+        out_fn,
+        X_train,
+        X_test,
+        train_label,
+        test_label,
+        distance,
+        filter_expr_func,
+        label_names,
+        label_types,
+    )
 
 
 def random_mv(out_fn: str) -> None:
@@ -691,6 +831,7 @@ RANDOM_DATASETS: Dict[str, Callable[[str], None]] = {
         out_fn, n=100000, size=70, universe=100
     ),
     "random-mv": random_mv,
+    "random-filter": lambda out_fn: random_filter(out_fn, 32, 10000, 30, 2),
 }
 
 
