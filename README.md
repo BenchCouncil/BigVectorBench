@@ -48,6 +48,10 @@ Arguments:
 - `--proc NUM`: the number of process to build docker images (default: 1, build serially)
 - `--algorithm NAME`: build only the named algorithm image (default: None, build all)
 
+Issues:
+
+- If you encounter an error while building the Docker image due to unreachable URLs, please try to modify the `Dockerfile` to use mirrors for the installation of the required packages.
+
 ### Run Benchmarks
 
 ```bash
@@ -88,7 +92,7 @@ python run.py --dataset app_reviews-384-euclidean-filter --count 100 --runs 3 --
 - [Qdrant](https://qdrant.com/)
   - qdrant
 
-**TODO**``
+**TODO**
 - [Elasitcsearch](https://www.elastic.co/)
 - [Vearch](https://vearch.github.io/)
 - [Redis](https://redis.io/)
