@@ -831,7 +831,9 @@ RANDOM_DATASETS: Dict[str, Callable[[str], None]] = {
         out_fn, n=100000, size=70, universe=100
     ),
     "random-mv": random_mv,
-    "random-filter": lambda out_fn: random_filter(out_fn, 32, 10000, 30, 2),
+    "random-xs-32-euclidean-2filter": lambda out_fn: random_filter(
+        out_fn, 32, 10000, 100, 2, "euclidean"
+    ),
 }
 
 
