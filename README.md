@@ -93,6 +93,7 @@ python run.py --dataset app_reviews-384-euclidean-filter --count 100 --runs 3 --
   - qdrant
 
 **TODO**
+
 - [Elasitcsearch](https://www.elastic.co/)
 - [Vearch](https://vearch.github.io/)
 - [Redis](https://redis.io/)
@@ -106,8 +107,6 @@ The datasets are available at [link](https://huggingface.co/datasets/Patrickcode
 
 ### Filter-ann Datasets
 
----
-
 | Dataset                          | Data / Query Points | Labels | Embedding Model                                                                     | Dimension | Distance  | Download                                                                                                                                                                                                                                      | Raw Data                                                           |
 | -------------------------------- | ------------------- | ------ | ----------------------------------------------------------------------------------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | ag_news-384-euclidean-filter     | 120,000 / 7,600     | 1      | [all-MiniLM-L12-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2) | 384       | Euclidean | [link1](https://huggingface.co/datasets/Patrickcode/BigVectorBench/resolve/main/ag_news-384-euclidean-filter.hdf5), [link2](https://hf-mirror.com/datasets/Patrickcode/BigVectorBench/resolve/main/ag_news-384-euclidean-filter.hdf5)         | [ag_news](https://huggingface.co/datasets/fancyzhx/ag_news)        |
@@ -117,8 +116,6 @@ The datasets are available at [link](https://huggingface.co/datasets/Patrickcode
 
 ### Multi-Modal Datasets
 
----
-
 | Dataset                           | Data / Query Points | Modal | Embedding Model                                            | Dimension | Distance  | Download                                                                                                                                                                                                                                        | Raw Data                                                                                |
 | --------------------------------- | ------------------- | ----- | ---------------------------------------------------------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | img-wikipedia-1024-euclidean-mm   | 479,116 / 10,000    | image | [ImageBind](https://github.com/facebookresearch/ImageBind) | 1024      | Euclidean | [link1](https://huggingface.co/datasets/Patrickcode/BigVectorBench/resolve/main/img-wikipedia-1024-euclidean-mm.hdf5), [link2](https://hf-mirror.com/datasets/Patrickcode/BigVectorBench/resolve/main/img-wikipedia-1024-euclidean-mm.hdf5)     | [img-wikipedia](https://huggingface.co/datasets/israfelsr/img-wikipedia-simple)         |
@@ -127,15 +124,11 @@ The datasets are available at [link](https://huggingface.co/datasets/Patrickcode
 
 ### Multi-Vector Datasets
 
----
-
 | Dataset                | Data / Query Points | Vectors | Embedding Model                                                             | Dimension | Distance  | Download                                                                                                                                                                                                                  | Raw Data                                                       |
 | ---------------------- | ------------------- | ------- | --------------------------------------------------------------------------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | webvid-4-512-euclidean | 1,000,000 / 10,000  | 4       | [CLIP-ViT-B-16](https://huggingface.co/sentence-transformers/clip-ViT-B-16) | 512       | Euclidean | [link1](https://huggingface.co/datasets/Patrickcode/BigVectorBench/resolve/main/webvid-4-512-euclidean.hdf5), [link2](https://hf-mirror.com/datasets/Patrickcode/BigVectorBench/resolve/main/webvid-4-512-euclidean.hdf5) | [webvid](https://huggingface.co/datasets/TempoFunk/webvid-10M) |
 
 ### Large-Scale Datasets
-
----
 
 | Dataset                                                              | Data / Query Points | Embedding Model                                                                                                                 | Dimension | Distance  | Download                                                                                                                                                                                                                                                                                                              | Raw Data                                                                |
 | -------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -187,7 +180,7 @@ For the development of BigVectorBench, we welcome contributions from the communi
 --------------- Attributes ---------------
 ['distance', 'filter_expr_func', 'label_names', 'label_types', 'type']
 distance :  euclidean
-filter_expr_func :  
+filter_expr_func :
 def filter_expr(unixtime):
     unixtime_head = unixtime - 3 * 24 * 60 * 60
     unixtime_tail = unixtime
@@ -328,6 +321,5 @@ float64
 Figures are available at [link](https://github.com/cococo2000/BigVectorBench/tree/main/results/vldb2025).
 
 ## Acknowledgements
-
 
 ## Citation
