@@ -119,7 +119,7 @@ class BruteForceBLAS(BaseANN):
         label_types: list[str] | None = None,
     ):
         """Initialize the search index."""
-        if labels:
+        if labels is not None:
             self.label_names = label_names
             self.label_types = label_types
             self.labels = np.ascontiguousarray(labels, dtype=np.int32)
