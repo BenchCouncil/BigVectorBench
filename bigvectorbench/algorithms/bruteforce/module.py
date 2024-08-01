@@ -119,9 +119,10 @@ class BruteForceBLAS(BaseANN):
         label_types: list[str] | None = None,
     ):
         """Initialize the search index."""
-        self.label_names = label_names
-        self.label_types = label_types
-        self.labels = np.ascontiguousarray(labels, dtype=np.int32)
+        if labels:
+            self.label_names = label_names
+            self.label_types = label_types
+            self.labels = np.ascontiguousarray(labels, dtype=np.int32)
         if self._metric == "angular":
             # precompute (squared) length of each vector
             lens = (X**2).sum(-1)
