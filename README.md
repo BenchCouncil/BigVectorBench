@@ -1,7 +1,7 @@
 # BigVectorBench
 
 [![LICENSE](https://img.shields.io/github/license/BenchCouncil/BigVectorBench.svg)](https://github.com/BenchCouncil/BigVectorBench/blob/master/LICENSE)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/BenchCouncil/BigVectorBench/benchmarks.yml?branch=main)](https://github.com/BenchCouncil/BigVectorBench/actions/workflows/benchmarks.yml)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/BenchCouncil/BigVectorBench/bvb-run.yml?branch=main)](https://github.com/BenchCouncil/BigVectorBench/actions/workflows/bvb-run.yml)
 [![Issues](https://img.shields.io/github/issues/BenchCouncil/BigVectorBench.svg)](https://github.com/BenchCouncil/BigVectorBench/issues)
 [![Issues](https://img.shields.io/github/issues-closed/BenchCouncil/BigVectorBench.svg)](https://github.com/BenchCouncil/BigVectorBench/issues)
 [![PR](https://img.shields.io/github/issues-pr/BenchCouncil/BigVectorBench.svg)](<[https://github.com/BenchCouncil/BigVectorBench/issues](https://github.com/BenchCouncil/BigVectorBench/pulls)>)
