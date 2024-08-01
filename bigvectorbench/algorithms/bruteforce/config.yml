@@ -13,7 +13,7 @@ float:
   any:
     - base_args: ["@metric"]
       constructor: BruteForce
-      disabled: true
+      disabled: false
       docker_tag: bigvectorbench-bruteforce
       module: bigvectorbench.algorithms.bruteforce
       name: bruteforce

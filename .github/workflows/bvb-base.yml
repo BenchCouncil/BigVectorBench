@@ -1,4 +1,4 @@
-name: BigVectorBench
+name: BigVectorBench-base
 
 on:
   push:
@@ -29,8 +29,8 @@ jobs:
       matrix:
         dataset: [random-xs-32-angular]
         library:
-          # - bruteforce
-          # - dummy_algo
+          - bruteforce
+          - dummy_algo
           - milvus
           - qdrant
           - weaviate
@@ -51,7 +51,7 @@ jobs:
       run: pip3 install --quiet -r requirements.txt
 
     - name: Build Library Docker Image
-      run: python3 install.py
+      run: python3 install.py --algorithm ${LIBRARY}
 
     - name: Run the benchmark
       run: |

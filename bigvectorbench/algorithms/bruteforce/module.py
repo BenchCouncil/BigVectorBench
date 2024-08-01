@@ -55,9 +55,23 @@ class BruteForceBLAS(BaseANN):
         self._metric = metric
         self._precision = precision
         self.name = "BruteForceBLAS()"
+        self.label_names = None
+        self.label_types = None
+        self.labels = None
+        self.index = None
+        self.lengths = None
 
-    def fit(self, X):
+    def fit(
+        self,
+        X,
+        labels: np.ndarray | None = None,
+        label_names: list[str] | None = None,
+        label_types: list[str] | None = None,
+    ):
         """Initialize the search index."""
+        self.label_names = label_names
+        self.label_types = label_types
+        self.labels = labels
         if self._metric == "angular":
             # precompute (squared) length of each vector
             lens = (X**2).sum(-1)
@@ -82,10 +96,10 @@ class BruteForceBLAS(BaseANN):
             # shouldn't get past the constructor!
             assert False, "invalid metric"
 
-    def query(self, v, n):
-        return [index for index, _ in self.query_with_distances(v, n)]
+    def query(self, v, n, filter_expr=None):
+        return [index for index, _ in self.query_with_distances(v, n, filter_expr)]
 
-    def query_with_distances(self, v, n):
+    def query_with_distances(self, v, n, filter_expr=None):
         """Find indices of `n` most similar vectors from the index to query
         vector `v`."""
 
@@ -109,6 +123,15 @@ class BruteForceBLAS(BaseANN):
         else:
             # shouldn't get past the constructor!
             assert False, "invalid metric"
+        if filter_expr is not None:
+            # satisfied_indices = []
+            for i, label in enumerate(self.labels):
+                label_str = ",".join(self.label_names) + " = " + ",".join(str(x) for x in label)
+                exec(label_str)
+                if eval(filter_expr) == False:
+                    # satisfied_indices.append(i)
+                    dists[i] = np.inf
+            # dists = [dists[i] for i in range(len(dists)) if i in satisfied_indices else np.inf]
         # partition-sort by distance, get `n` closest
         nearest_indices = np.argpartition(dists, n)[:n]
         indices = [
