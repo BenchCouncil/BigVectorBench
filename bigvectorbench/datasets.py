@@ -771,7 +771,7 @@ def bvb_dataset(out_fn: str, dataset_name: str) -> None:
     """
     bvb_dataset: Downloads a dataset from the BigVectorBench repository on Hugging Face Datasets Hub
     """
-    dataset_url = f"https://huggingface.co.com/datasets/Patrickcode/BigVectorBench/resolve/main/{dataset_name}.hdf5"
+    dataset_url = f"https://huggingface.co/datasets/Patrickcode/BigVectorBench/resolve/main/{dataset_name}.hdf5"
     # dataset_url = f"https://hf-mirror.com/datasets/Patrickcode/BigVectorBench/resolve/main/{dataset_name}.hdf5"
     download(dataset_url, out_fn)
 
