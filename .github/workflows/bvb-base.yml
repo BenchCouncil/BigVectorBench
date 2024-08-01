@@ -1,4 +1,4 @@
-name: BigVectorBench
+name: BigVectorBench-base
 
 on:
   push:
