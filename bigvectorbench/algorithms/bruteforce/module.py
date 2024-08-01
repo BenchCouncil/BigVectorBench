@@ -17,6 +17,10 @@ class BruteForce(BaseANN):
             algorithm="brute", metric=metric
         )
         self.name = "BruteForce()"
+        self.embeddings = None
+        self.labels = None
+        self.label_names = None
+        self.label_types = None
 
     def load_data(
         self,
@@ -26,11 +30,37 @@ class BruteForce(BaseANN):
         label_types: list[str] | None = None,
     ) -> None:
         self._nbrs.fit(embeddings)
+        self.embeddings = embeddings
+        self.labels = labels
+        self.label_names = label_names
+        self.label_types = label_types
+        self.num_entities = len(embeddings)
 
     def query(self, v, n, filter_expr=None):
+        # if filter_expr is not None:
+        #     raise NotImplementedError("BruteForce doesn't support filtering")
         if filter_expr is not None:
-            raise NotImplementedError("BruteForce doesn't support filtering")
-        return list(self._nbrs.kneighbors([v], return_distance=False, n_neighbors=n)[0])
+            ann_res = list(
+                self._nbrs.kneighbors(
+                    [v], return_distance=False, n_neighbors=len(self.labels)
+                )[0]
+            )
+            satisfied_indices = []
+            for i in ann_res:
+                label = self.labels[i]
+                label_str = (
+                    ",".join(self.label_names) + " = " + ",".join(str(x) for x in label)
+                )
+                exec(label_str)
+                if eval(filter_expr) == True:
+                    satisfied_indices.append(i)
+                if len(satisfied_indices) == n:
+                    break
+            return satisfied_indices
+        else:
+            return list(
+                self._nbrs.kneighbors([v], return_distance=False, n_neighbors=n)[0]
+            )
 
     def query_with_distances(self, v, n):
         (distances, positions) = self._nbrs.kneighbors(
@@ -38,6 +68,27 @@ class BruteForce(BaseANN):
         )
         return zip(list(positions[0]), list(distances[0]))
 
+    def insert(self, embeddings: np.ndarray, labels: np.ndarray | None = None) -> None:
+        self.embeddings = np.append(self.embeddings, embeddings[np.newaxis, :], axis=0)
+        if labels is not None:
+            self.labels = np.append(self.labels, labels[np.newaxis, :], axis=0)
+        self._nbrs.fit(self.embeddings)
+        self.num_entities += 1
+
+    def update(
+        self, index: int, embeddings: np.ndarray, labels: np.ndarray | None = None
+    ) -> None:
+        self.embeddings[index] = embeddings
+        if labels is not None:
+            self.labels[index] = labels
+        self._nbrs.fit(self.embeddings)
+
+    def delete(self, index: int) -> None:
+        self.embeddings[index] = [0] * len(self.embeddings[index])
+        if self.labels is not None:
+            self.labels[index] = [0] * len(self.labels[index])
+        self._nbrs.fit(self.embeddings)
+        self.num_entities -= 1
 
 class BruteForceBLAS(BaseANN):
     """kNN search that uses a linear scan = brute force."""
@@ -49,8 +100,7 @@ class BruteForceBLAS(BaseANN):
             )
         elif metric == "hamming" and precision != np.bool_:
             raise NotImplementedError(
-                "BruteForceBLAS doesn't support precision %s with Hamming distances"
-                % precision
+                f"BruteForceBLAS doesn't support precision {precision} with Hamming distances"
             )
         self._metric = metric
         self._precision = precision
@@ -69,9 +119,10 @@ class BruteForceBLAS(BaseANN):
         label_types: list[str] | None = None,
     ):
         """Initialize the search index."""
-        self.label_names = label_names
-        self.label_types = label_types
-        self.labels = labels
+        if labels is not None:
+            self.label_names = label_names
+            self.label_types = label_types
+            self.labels = np.ascontiguousarray(labels, dtype=np.int32)
         if self._metric == "angular":
             # precompute (squared) length of each vector
             lens = (X**2).sum(-1)
@@ -95,6 +146,16 @@ class BruteForceBLAS(BaseANN):
         else:
             # shouldn't get past the constructor!
             assert False, "invalid metric"
+
+    def load_data(
+        self,
+        embeddings: np.array,
+        labels: np.ndarray | None = None,
+        label_names: list[str] | None = None,
+        label_types: list[str] | None = None,
+    ) -> None:
+        self.fit(embeddings, labels, label_names, label_types)
+        self.num_entities = len(embeddings)
 
     def query(self, v, n, filter_expr=None):
         return [index for index, _ in self.query_with_distances(v, n, filter_expr)]
@@ -126,7 +187,9 @@ class BruteForceBLAS(BaseANN):
         if filter_expr is not None:
             # satisfied_indices = []
             for i, label in enumerate(self.labels):
-                label_str = ",".join(self.label_names) + " = " + ",".join(str(x) for x in label)
+                label_str = (
+                    ",".join(self.label_names) + " = " + ",".join(str(x) for x in label)
+                )
                 exec(label_str)
                 if eval(filter_expr) == False:
                     # satisfied_indices.append(i)
@@ -146,3 +209,22 @@ class BruteForceBLAS(BaseANN):
             return (index, pd[self._metric].distance(ep, ev))
 
         return map(fix, indices)
+
+    def insert(self, embeddings: np.ndarray, labels: np.ndarray | None = None) -> None:
+        self.index = np.append(self.index, embeddings[np.newaxis, :], axis=0)
+        if labels is not None:
+            self.labels = np.append(self.labels, labels[np.newaxis, :], axis=0)
+        self.num_entities += 1
+
+    def update(
+        self, index: int, embeddings: np.ndarray, labels: np.ndarray | None = None
+    ) -> None:
+        self.index[index] = embeddings
+        if labels is not None:
+            self.labels[index] = labels
+
+    def delete(self, index: int) -> None:
+        self.index[index] = [0] * len(self.index[index])
+        if self.labels is not None:
+            self.labels[index] = [0] * len(self.labels[index])
+        self.num_entities -= 1

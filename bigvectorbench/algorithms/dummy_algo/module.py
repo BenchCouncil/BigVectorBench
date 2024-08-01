@@ -22,4 +22,4 @@ class DummyAlgo(BaseANN):
         self.len = len(embeddings)
 
     def query(self, v, n, filter_expr=None):
-        return np.random.randint(self.len, size=n)
+        return np.random.choice(self.len, size=n, replace=False)
