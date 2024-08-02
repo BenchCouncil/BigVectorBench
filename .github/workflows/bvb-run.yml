@@ -32,6 +32,7 @@ jobs:
           - bruteforce
           - dummy_algo
           - milvus
+          # - milvus_gpu # GPU support is not available in the free tier
           - qdrant
           - weaviate
 
