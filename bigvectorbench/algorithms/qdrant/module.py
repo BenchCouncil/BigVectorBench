@@ -76,7 +76,7 @@ class Qdrant(BaseANN):
             print("[qdrant] docker container already exists!!!")
             self.container = self.docker_client.containers.get(self.docker_name)
             self.stop_container()
-        subprocess.run(["docker", "pull", "qdrant/qdrant:v1.9.2"], check=True)
+        subprocess.run(["docker", "pull", "qdrant/qdrant:v1.10.1"], check=True)
         self.container = self.docker_client.containers.run(
             "qdrant/qdrant:v1.9.2",
             name=self.docker_name,
