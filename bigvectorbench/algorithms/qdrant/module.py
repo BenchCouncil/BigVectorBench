@@ -39,23 +39,23 @@ class Qdrant(BaseANN):
     def __init__(self, metric: str, index_param: dict):
         self._metric = metric
         self._metric_type = metric_mapping(metric)
-        self._collection_name = "qdrant_test"
+        self._collection_name = "Qdrant_test"
         self._m = index_param.get("M", None)
         self._ef_construct = index_param.get("efConstruction", None)
         self.docker_client = None
-        self.docker_name = "qdrant"
+        self.docker_name = "Qdrant"
         self.container = None
         self.start_container()
         self.client = QdrantClient(url="http://localhost:6333", timeout=10)
-        print("[qdrant] client connected successfully!!!")
+        print("[Qdrant] client connected successfully!!!")
         self.num_labels = 0
         self.label_names = []
         self.load_batch_size = 1000
         self.query_batch_size = 100
         if self.client.collection_exists(self._collection_name):
-            print("[qdrant] collection already exists!!!")
+            print("[Qdrant] collection already exists!!!")
             self.client.delete_collection(self._collection_name)
-            print("[qdrant] collection deleted successfully!!!")
+            print("[Qdrant] collection deleted successfully!!!")
         self.name = f"Qdrant metric:{self._metric} m:{self._m} ef_construct:{self._ef_construct}"
         self.search_params = None
         self.query_vector = None
@@ -69,31 +69,25 @@ class Qdrant(BaseANN):
 
     def start_container(self) -> None:
         """
-        Start qdrant by docker run
+        Start Qdrant with docker compose and wait for it to be ready
         """
-        self.docker_client = docker.from_env()
-        if self.docker_client.containers.list(filters={"name": self.docker_name}) != []:
-            print("[qdrant] docker container already exists!!!")
-            self.container = self.docker_client.containers.get(self.docker_name)
-            self.stop_container()
-        subprocess.run(["docker", "pull", "qdrant/qdrant:v1.10.1"], check=True)
-        self.container = self.docker_client.containers.run(
-            "qdrant/qdrant:v1.9.2",
-            name=self.docker_name,
-            volumes={"/tmp/qdrant_storage": {"bind": "/qdrant/storage", "mode": "z"}},
-            ports={"6333/tcp": 6333, "6334/tcp": 6334},
-            detach=True,
-        )
-        print("[qdrant] docker start successfully!!!")
+        try:
+            subprocess.run(["docker", "compose", "down"], check=True)
+            subprocess.run(["docker", "compose", "up", "-d"], check=True)
+            print("[Qdrant] docker compose up successfully!!!")
+        except subprocess.CalledProcessError as e:
+            print(f"[Qdrant] docker compose up failed: {e}!!!")
         sleep(10)
 
     def stop_container(self) -> None:
         """
-        Stop qdrant
+        Stop Qdrant
         """
-        self.container.stop()
-        self.container.remove(force=True)
-        print("[qdrant] docker stop successfully!!!")
+        try:
+            subprocess.run(["docker", "compose", "down"], check=True)
+            print("[Qdrant] docker compose down successfully!!!")
+        except subprocess.CalledProcessError as e:
+            print(f"[Qdrant] docker compose down failed: {e}!!!")
 
     def load_data(
         self,
@@ -106,7 +100,7 @@ class Qdrant(BaseANN):
         num_labels = len(label_names) if label_names is not None else 0
         self.num_labels = num_labels
         self.label_names = label_names
-        print(f"[qdrant] load data with {num_labels} labels!!!")
+        print(f"[Qdrant] load data with {num_labels} labels!!!")
         self.client.create_collection(
             collection_name=self._collection_name,
             vectors_config=VectorParams(
@@ -117,8 +111,8 @@ class Qdrant(BaseANN):
             ),
             on_disk_payload=True,
         )
-        print("[qdrant] collection created successfully!!!")
-        print(f"[qdrant] Start uploading {len(embeddings)} vectors...")
+        print("[Qdrant] collection created successfully!!!")
+        print(f"[Qdrant] Start uploading {len(embeddings)} vectors...")
         for i in range(0, len(embeddings), self.load_batch_size):
             points = []
             for j in range(i, min(i + self.load_batch_size, len(embeddings))):
@@ -130,7 +124,7 @@ class Qdrant(BaseANN):
             self.client.upsert(
                 collection_name=self._collection_name, points=points, wait=True
             )
-        print(f"[qdrant] Uploaded {len(embeddings)} vectors successfully!!!")
+        print(f"[Qdrant] Uploaded {len(embeddings)} vectors successfully!!!")
         # wait for vectors to be fully indexed
         while True:
             sleep(5)
@@ -138,12 +132,12 @@ class Qdrant(BaseANN):
             if collection_info.status != CollectionStatus.GREEN:
                 continue
             else:
-                print(f"[qdrant] Point count: {collection_info.points_count}")
-                print(f"[qdrant] Stored vectors: {collection_info.vectors_count}")
+                print(f"[Qdrant] Point count: {collection_info.points_count}")
+                print(f"[Qdrant] Stored vectors: {collection_info.vectors_count}")
                 print(
-                    f"[qdrant] Indexed vectors: {collection_info.indexed_vectors_count}"
+                    f"[Qdrant] Indexed vectors: {collection_info.indexed_vectors_count}"
                 )
-                print(f"[qdrant] Collection status: {collection_info.status}")
+                print(f"[Qdrant] Collection status: {collection_info.status}")
                 break
         self.num_entities = len(embeddings)
 
@@ -178,7 +172,7 @@ class Qdrant(BaseANN):
             expr (str): filter expression. Example: "age > 20 and height < 180 or weight == 70"
 
         Returns:
-            Filter: Filter object for qdrant query
+            Filter: Filter object for Qdrant query
         """
         tokens = expr.split()
         must_filters = []
@@ -190,7 +184,7 @@ class Qdrant(BaseANN):
                 i += 2
             elif tokens[i] == "or":
                 raise ValueError(
-                    f"[qdrant] we have not supported 'or' operator in expression!!!, expr: {expr}"
+                    f"[Qdrant] we have not supported 'or' operator in expression!!!, expr: {expr}"
                 )
             elif tokens[i] in ["==", ">=", "<=", ">", "<", "!="]:
                 left = tokens[i - 1]
@@ -226,7 +220,7 @@ class Qdrant(BaseANN):
                         )
                     )
             else:
-                raise ValueError(f"[qdrant] Unsupported operator: {tokens[i]}")
+                raise ValueError(f"[Qdrant] Unsupported operator: {tokens[i]}")
         return must_filters, must_not_filters
 
     def query(self, v, n, filter_expr=None):
@@ -367,7 +361,7 @@ class Qdrant(BaseANN):
 
     def done(self):
         self.client.delete_collection(self._collection_name)
-        print("[qdrant] collection deleted successfully!!!")
+        print("[Qdrant] collection deleted successfully!!!")
         self.client.close()
         self.stop_container()
 
@@ -430,7 +424,7 @@ class Qdrant(BaseANN):
         Returns:
             None
         """
-        # print(f"[qdrant] delete index: {index}")
+        # print(f"[Qdrant] delete index: {index}")
         self.client.delete(
             collection_name=self._collection_name,
             points_selector=models.PointIdsList(points=[int(index)]),

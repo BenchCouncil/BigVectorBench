@@ -1,0 +1,13 @@
+# https://qdrant.tech/documentation/quickstart/
+# docker run -p 6333:6333 -p 6334:6334 \
+#     -v $(pwd)/qdrant_storage:/qdrant/storage:z \
+#     qdrant/qdrant
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.10.1
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/qdrant_storage:/qdrant/storage
