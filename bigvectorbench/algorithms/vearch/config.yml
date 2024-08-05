@@ -1,0 +1,11 @@
+float:
+  euclidean:
+    - base_args: ["@metric", "@dimension"]
+      constructor: VearchBase
+      disabled: False
+      docker_tag: bigvectorbench-vearch
+      module: bigvectorbench.algorithms.vearch
+      name: vearch
+      run_groups:
+        FLAT:
+          args: []
