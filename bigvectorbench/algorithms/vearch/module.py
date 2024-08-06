@@ -1,8 +1,9 @@
 """ Vearch module for BigVectorBench framework. """
 
 import subprocess
-from time import sleep, time
+from time import sleep
 import numpy as np
+import requests
 
 from vearch.core.vearch import Vearch
 from vearch.config import Config
@@ -50,9 +51,6 @@ class VearchBase(BaseANN):
         self._dim = dim
         self._metric_type = metric_mapping(metric)
         self._database_name = "Vearch_test"
-        self.docker_client = None
-        self.docker_name = "Vearch"
-        self.container = None
         self.start_container()
         config = Config(host="http://localhost:9001", token="secret")
         self.client = Vearch(config)
@@ -103,6 +101,10 @@ class VearchBase(BaseANN):
         except subprocess.CalledProcessError as e:
             print(f"[Vearch] docker compose --profile standalone down failed: {e}!!!")
 
+    def get_vector_index(self):
+        """Get vector index"""
+        raise NotImplementedError()
+
     def load_data(
         self,
         embeddings: np.array,
@@ -110,19 +112,17 @@ class VearchBase(BaseANN):
         label_names: list[str] | None = None,
         label_types: list[str] | None = None,
     ) -> None:
-        num_vectors = embeddings.shape[1] if len(embeddings.shape) == 3 else 1
         num_labels = len(label_names) if label_names is not None else 0
         self.num_labels = num_labels
         self.label_names = label_names
         print(f"[Vearch] load data with {num_labels} labels!!!")
         self.client.create_database(self._database_name)
+        # number of entities, needed for training_threshold in IvfFlatIndex and IvfPQIndex
+        self.num_entities = len(embeddings)
         field_vec = Field(
             name="vector",
             data_type=DataType.VECTOR,
-            index=FlatIndex(
-                index_name="vector_idx",
-                metric_type=self._metric_type,
-            ),
+            index=self.get_vector_index(),
             dimension=self._dim,
         )
         field_id = Field(name="id", data_type=DataType.INTEGER)
@@ -138,7 +138,7 @@ class VearchBase(BaseANN):
         ret = self.client.create_space(
             database_name=self._database_name, space=space_schema
         )
-        # print(ret.data, ret.msg)
+        print(ret.data, ret.msg)
         print("[Vearch] database and space created successfully!!!")
         print(f"[Vearch] Start uploading {len(embeddings)} vectors...")
         for i in range(0, len(embeddings), self.load_batch_size):
@@ -154,14 +154,38 @@ class VearchBase(BaseANN):
                 space_name=f"{self._database_name}_space",
                 data=items,
             )
+            # print(ret.__dict__)
             # print(ret.get_document_ids())
             # print(len(ret.get_document_ids()))
         print(f"[Vearch] Uploaded {len(embeddings)} vectors successfully!!!")
-        self.num_entities = len(embeddings)
+
+    def waiting_index_finish(self, total, timewait=5):
+        """'Waiting for index finish'"""
+        router_url = "http://localhost:9001"
+        url = (
+            router_url
+            + "/dbs/"
+            + self._database_name
+            + "/spaces/"
+            + self._database_name
+            + "_space"
+        )
+        num = 0
+        while num < total:
+            num = 0
+            response = requests.get(url, auth=("root", "secret"), timeout=10)
+            # print(f"response: {response.json()}")
+            partitions = response.json()["data"]["partitions"]
+            for p in partitions:
+                num += p["index_num"]
+            # print(f"index num: {num}/{total}")
+            sleep(timewait)
 
     def create_index(self):
-        """Vearch has already created index during data upload"""
-        pass
+        """Vearch has already started indexing when inserting data"""
+        print("[Vearch] Waiting for index finish...")
+        self.waiting_index_finish(self.num_entities, timewait=1)
+        print("[Vearch] Index finish!!!")
 
     def set_query_arguments(self):
         """
@@ -194,7 +218,10 @@ class VearchBase(BaseANN):
                 operator = tokens[i]
                 right = tokens[i + 1]
                 i += 4
+                if operator == "==":
+                    operator = "="
                 fv = FieldValue(field=left, value=int(right))
+                # print(f"[Vearch] left: {left}, operator: {operator}, right: {right}")
                 conditons_query.append(Condition(operator=operator, fv=fv))
             else:
                 raise ValueError(f"[Vearch] Unsupported operator: {tokens[i]}")
@@ -208,6 +235,7 @@ class VearchBase(BaseANN):
         ret = self.client.search(
             database_name=self._database_name,
             space_name=f"{self._database_name}_space",
+            index_params=self.search_params,
             vector_infos=[vi],
             filter=filters,
             limit=n,
@@ -235,12 +263,14 @@ class VearchBase(BaseANN):
         ret = self.client.search(
             database_name=self._database_name,
             space_name=f"{self._database_name}_space",
+            index_params=self.search_params,
             vector_infos=[
                 VectorInfo("vector", self.query_vector),
             ],
             filter=self.query_filter,
             limit=self.query_topk,
         )
+        print(f"[Vearch] query result: {ret.__dict__}")
         self.prepare_query_results = [point["id"] for point in ret.documents[0]]
 
     def get_prepared_query_results(self) -> list[int]:
@@ -334,3 +364,168 @@ class VearchBase(BaseANN):
             ),
             limit=1,
         )
+
+
+class VearchFlat(VearchBase):
+    """Vearch Flat implementation"""
+
+    def __init__(self, metric: str, dim: int):
+        super().__init__(metric, dim)
+        self.name = f"Vearch Flat metric:{self._metric}"
+
+    def get_vector_index(self):
+        """Get Flat vector index"""
+        return FlatIndex(
+            index_name="vector_idx",
+            metric_type=self._metric_type,
+        )
+
+    def set_query_arguments(self):
+        """
+        Set query arguments for weaviate query with hnsw index
+        """
+        self.search_params = {
+            "metric_type": self._metric_type,
+            "parallel_on_queries": 0,
+        }
+
+
+class VearchHNSW(VearchBase):
+    """Vearch HNSW implementation"""
+
+    def __init__(self, metric: str, dim: int, index_param: dict):
+        super().__init__(metric, dim)
+        self._nlinks = index_param.get("nlinks", 32)
+        self._efConstruction = index_param.get("efConstruction", 40)
+        self.name = f"Vearch HNSW metric:{self._metric}"
+
+    def get_vector_index(self):
+        """Get HNSW vector index"""
+        return HNSWIndex(
+            index_name="vector_idx",
+            metric_type=self._metric_type,
+            nlinks=self._nlinks,
+            efConstruction=self._efConstruction,
+        )
+
+    def set_query_arguments(self, efSearch: int = 40):
+        """
+        Set query arguments for weaviate query with hnsw index
+        """
+        self.search_params = {
+            "metric_type": self._metric_type,
+            "efSearch": efSearch,
+        }
+
+
+class VearchIvfFlat(VearchBase):
+    """Vearch IvfFlat implementation"""
+
+    def __init__(self, metric: str, dim: int, index_param: dict):
+        super().__init__(metric, dim)
+        self._ncentroids = index_param.get("ncentroids", 2048)
+        self.name = f"Vearch IvfFlat metric:{self._metric}"
+
+    def get_vector_index(self):
+        """Get IvfFlat vector index"""
+        return IvfFlatIndex(
+            index_name="vector_idx",
+            metric_type=self._metric_type,
+            ncentroids=self._ncentroids,
+            training_threshold=self.num_entities,
+        )
+
+    def set_query_arguments(self, nprobe: int = 80):
+        """
+        Set query arguments for weaviate query with hnsw index
+        """
+        self.search_params = {
+            "metric_type": self._metric_type,
+            "nprobe": nprobe,
+            "parallel_on_queries": 0,
+        }
+
+
+class VearchIvfPQ(VearchBase):
+    """Vearch IvfPQ implementation"""
+
+    def __init__(self, metric: str, dim: int, index_param: dict):
+        super().__init__(metric, dim)
+        self._ncentroids = index_param.get("ncentroids", 2048)
+        self._nsubvector = index_param.get("nsubvector", 64)
+        self.name = f"Vearch IvfPQ metric:{self._metric}"
+
+    def get_vector_index(self):
+        """Get IvfPQ vector index"""
+        return IvfPQIndex(
+            index_name="vector_idx",
+            metric_type=self._metric_type,
+            ncentroids=self._ncentroids,
+            nsubvector=self._nsubvector,
+            training_threshold=self.num_entities,
+        )
+
+    def set_query_arguments(self, nprobe: int = 80):
+        """
+        Set query arguments for weaviate query with hnsw index
+        """
+        self.search_params = {
+            "metric_type": self._metric_type,
+            "nprobe": nprobe,
+            "parallel_on_queries": 0,
+        }
+
+
+class VearchBinaryIvf(VearchBase):
+    """Vearch BinaryIvf implementation"""
+
+    def __init__(self, metric: str, dim: int, index_param: dict):
+        super().__init__(metric, dim)
+        self._ncentroids = index_param.get("ncentroids", 2048)
+        self.name = f"Vearch BinaryIvf metric:{self._metric}"
+
+    def get_vector_index(self):
+        """Get BinaryIvf vector index"""
+        return BinaryIvfIndex(
+            index_name="vector_idx",
+            metric_type=self._metric_type,
+            ncentroids=self._ncentroids,
+        )
+
+    def set_query_arguments(self, nprobe: int = 80):
+        """
+        Set query arguments for weaviate query with hnsw index
+        """
+        self.search_params = {
+            "metric_type": self._metric_type,
+            "nprobe": nprobe,
+        }
+
+
+class VearchGPUIvfPQ(VearchBase):
+    """Vearch GPUIvfPQ implementation"""
+
+    def __init__(self, metric: str, dim: int, index_param: dict):
+        super().__init__(metric, dim)
+        self._ncentroids = index_param.get("ncentroids", 2048)
+        self._nsubvector = index_param.get("nsubvector", 64)
+        self.name = f"Vearch GPUIvfPQ metric:{self._metric}"
+
+    def get_vector_index(self):
+        """Get GPUIvfPQ vector index"""
+        return GPUIvfPQIndex(
+            index_name="vector_idx",
+            metric_type=self._metric_type,
+            ncentroids=self._ncentroids,
+            nsubvector=self._nsubvector,
+        )
+
+    def set_query_arguments(self, nprobe: int = 80):
+        """
+        Set query arguments for weaviate query with hnsw index
+        """
+        self.search_params = {
+            "metric_type": self._metric_type,
+            "nprobe": nprobe,
+            "parallel_on_queries": 0,
+        }

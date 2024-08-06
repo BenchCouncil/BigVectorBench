@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dataset: [random-xs-32-angular, random-xs-32-euclidean-2filter]
+        dataset: [random-xs-32-euclidean, random-xs-32-euclidean-2filter]
         library:
           - bruteforce
           - dummy_algo
