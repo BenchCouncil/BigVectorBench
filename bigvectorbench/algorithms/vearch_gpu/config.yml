@@ -3,8 +3,8 @@ float:
     - base_args: ["@metric", "@dimension"]
       constructor: VearchGPUIvfPQ
       disabled: False
-      docker_tag: bigvectorbench-vearch
-      module: bigvectorbench.algorithms.vearch
+      docker_tag: bigvectorbench-vearch_gpu
+      module: bigvectorbench.algorithms.vearch_gpu
       name: vearch-gpuivfpq
       run_groups:
         GPUIVFPQ_64:
