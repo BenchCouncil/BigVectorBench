@@ -36,6 +36,7 @@ jobs:
           - qdrant
           - weaviate
           - vearch
+          # - vearch_gpu
 
     name: ${{ matrix.library }} (${{ matrix.dataset }})
 

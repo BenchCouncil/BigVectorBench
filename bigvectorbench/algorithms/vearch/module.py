@@ -17,7 +17,6 @@ from vearch.schema.index import (
     BinaryIvfIndex,
     IvfFlatIndex,
     IvfPQIndex,
-    GPUIvfPQIndex,
 )
 from vearch.filter import Filter, Condition, FieldValue
 
@@ -116,7 +115,8 @@ class VearchBase(BaseANN):
         self.num_labels = num_labels
         self.label_names = label_names
         print(f"[Vearch] load data with {num_labels} labels!!!")
-        self.client.create_database(self._database_name)
+        ret = self.client.create_database(self._database_name)
+        print(f"[Vearch] create database: {ret.__dict__}")
         # number of entities, needed for training_threshold in IvfFlatIndex and IvfPQIndex
         self.num_entities = len(embeddings)
         field_vec = Field(
@@ -125,7 +125,7 @@ class VearchBase(BaseANN):
             index=self.get_vector_index(),
             dimension=self._dim,
         )
-        field_id = Field(name="id", data_type=DataType.INTEGER)
+        field_id = Field(name="id", data_type=DataType.INTEGER, index=ScalarIndex(index_name="id_idx"))
         fields = [field_id, field_vec]
         for i in range(num_labels):
             field = Field(
@@ -138,7 +138,7 @@ class VearchBase(BaseANN):
         ret = self.client.create_space(
             database_name=self._database_name, space=space_schema
         )
-        print(ret.data, ret.msg)
+        print(f"[Vearch] create space: {ret.__dict__}")
         print("[Vearch] database and space created successfully!!!")
         print(f"[Vearch] Start uploading {len(embeddings)} vectors...")
         for i in range(0, len(embeddings), self.load_batch_size):
@@ -191,7 +191,7 @@ class VearchBase(BaseANN):
         """
         Set query arguments for weaviate query with hnsw index
         """
-        pass
+        raise NotImplementedError()
 
     def convert_expr_to_filter(self, expr: str):
         """
@@ -218,11 +218,12 @@ class VearchBase(BaseANN):
                 operator = tokens[i]
                 right = tokens[i + 1]
                 i += 4
-                if operator == "==":
-                    operator = "="
                 fv = FieldValue(field=left, value=int(right))
-                # print(f"[Vearch] left: {left}, operator: {operator}, right: {right}")
-                conditons_query.append(Condition(operator=operator, fv=fv))
+                if operator == "==": # Vearch seems not support "=" operator
+                    conditons_query.append(Condition(operator=">=", fv=fv))
+                    conditons_query.append(Condition(operator="<=", fv=fv))
+                else:
+                    conditons_query.append(Condition(operator=operator, fv=fv))
             else:
                 raise ValueError(f"[Vearch] Unsupported operator: {tokens[i]}")
         return Filter(operator="AND", conditions=conditons_query)
@@ -270,7 +271,7 @@ class VearchBase(BaseANN):
             filter=self.query_filter,
             limit=self.query_topk,
         )
-        print(f"[Vearch] query result: {ret.__dict__}")
+        # print(f"[Vearch] query result: {ret.__dict__}")
         self.prepare_query_results = [point["id"] for point in ret.documents[0]]
 
     def get_prepared_query_results(self) -> list[int]:
@@ -499,33 +500,4 @@ class VearchBinaryIvf(VearchBase):
         self.search_params = {
             "metric_type": self._metric_type,
             "nprobe": nprobe,
-        }
-
-
-class VearchGPUIvfPQ(VearchBase):
-    """Vearch GPUIvfPQ implementation"""
-
-    def __init__(self, metric: str, dim: int, index_param: dict):
-        super().__init__(metric, dim)
-        self._ncentroids = index_param.get("ncentroids", 2048)
-        self._nsubvector = index_param.get("nsubvector", 64)
-        self.name = f"Vearch GPUIvfPQ metric:{self._metric}"
-
-    def get_vector_index(self):
-        """Get GPUIvfPQ vector index"""
-        return GPUIvfPQIndex(
-            index_name="vector_idx",
-            metric_type=self._metric_type,
-            ncentroids=self._ncentroids,
-            nsubvector=self._nsubvector,
-        )
-
-    def set_query_arguments(self, nprobe: int = 80):
-        """
-        Set query arguments for weaviate query with hnsw index
-        """
-        self.search_params = {
-            "metric_type": self._metric_type,
-            "nprobe": nprobe,
-            "parallel_on_queries": 0,
         }

@@ -115,35 +115,3 @@ float:
             ncentroids: [1024]
             nsubvector: [4, 8, 16]
           query_args: [[64, 128, 256, 512, 1024]]
-    - base_args: ["@metric", "@dimension"]
-      constructor: VearchGPUIvfPQ
-      disabled: False
-      docker_tag: bigvectorbench-vearch
-      module: bigvectorbench.algorithms.vearch
-      name: vearch-gpuivfpq
-      run_groups:
-        GPUIVFPQ_64:
-          args:
-            ncentroids: [512]
-            nsubvector: [8]
-          query_args: [[4, 8, 16, 32, 64]]
-        GPUIVFPQ_128:
-          args:
-            ncentroids: [128]
-            nsubvector: [4, 8, 16]
-          query_args: [[8, 16, 32, 64, 128]]
-        GPUIVFPQ_256:
-          args:
-            ncentroids: [256]
-            nsubvector: [4, 8, 16]
-          query_args: [[16, 32, 64, 128, 256]]
-        GPUIVFPQ_512:
-          args:
-            ncentroids: [512]
-            nsubvector: [4, 8, 16]
-          query_args: [[32, 64, 128, 256, 512]]
-        GPUIVFPQ_1024:
-          args:
-            ncentroids: [1024]
-            nsubvector: [4, 8, 16]
-          query_args: [[64, 128, 256, 512, 1024]]
