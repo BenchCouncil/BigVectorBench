@@ -1,4 +1,4 @@
-FROM bigvectorbench
+FROM bigvectorbench-base
 
 RUN pip install weaviate-client==4.7.1
 RUN python3 -c "from weaviate import Client"

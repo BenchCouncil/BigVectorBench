@@ -56,14 +56,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print("Building base & base_gpu image...")
-    subprocess.check_call(
-        "docker build --rm -t bigvectorbench -f bigvectorbench/algorithms/base/Dockerfile .",
-        shell=True,
-    )
-    subprocess.check_call(
-        "docker build --rm -t bigvectorbench_gpu -f bigvectorbench/algorithms/base_gpu/Dockerfile .",
-        shell=True,
-    )
+    with Pool(processes=2) as pool:
+        pool.map(
+            build_multiprocess,
+            [
+                ("base", args.build_arg),
+                ("base_gpu", args.build_arg),
+            ],
+        )
     print("Building base & base_gpu image done.")
 
     if args.algorithm:

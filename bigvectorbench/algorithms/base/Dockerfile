@@ -7,7 +7,7 @@ FROM ubuntu:22.04
 # Install Python3 and pip3
 RUN apt-get update \
     && apt-get install -y python3 python3-pip wget \
-    && pip3 install -U pip \
+    && python3 -m pip install --upgrade pip \
     && python3 --version
 # Change pip source to Tsinghua mirror
 # RUN pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple

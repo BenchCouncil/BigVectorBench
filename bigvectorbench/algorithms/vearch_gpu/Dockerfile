@@ -1,4 +1,4 @@
-FROM bigvectorbench_gpu
+FROM bigvectorbench-base_gpu
 
 # Install Vearch Python SDK
 RUN pip3 install pyvearch==3.5.1

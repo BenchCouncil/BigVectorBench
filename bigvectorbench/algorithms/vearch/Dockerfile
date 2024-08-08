@@ -1,4 +1,4 @@
-FROM bigvectorbench
+FROM bigvectorbench-base
 
 # Install Vearch Python SDK
 RUN pip3 install pyvearch==3.5.1

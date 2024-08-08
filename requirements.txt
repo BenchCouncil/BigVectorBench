@@ -1,12 +1,8 @@
-ansicolors==1.1.8
 docker==7.1.0
-h5py==3.8.0
-matplotlib==3.6.3
+h5py==3.11.0
+matplotlib==3.9.0
 numpy==1.24.2
-pyyaml==6.0
-psutil==5.9.4
-scikit-learn==1.5.0
-jinja2==3.1.4
-pytest==8.3.1
+psutil==6.0.0
+pytest==8.3.2
 datasets==2.19.1
 implicit==0.7.2
