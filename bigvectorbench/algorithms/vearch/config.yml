@@ -1,0 +1,117 @@
+float:
+  euclidean:
+    - base_args: ["@metric", "@dimension"]
+      constructor: VearchFlat
+      disabled: False
+      docker_tag: bigvectorbench-vearch
+      module: bigvectorbench.algorithms.vearch
+      name: vearch-flat
+      run_groups:
+        FLAT:
+          args: []
+    - base_args: ["@metric", "@dimension"]
+      constructor: VearchHNSW
+      disabled: False
+      docker_tag: bigvectorbench-vearch
+      module: bigvectorbench.algorithms.vearch
+      name: vearch-hnsw
+      run_groups:
+        HNSW:
+          args:
+            nlinks: [4, 8, 12, 16, 24, 36, 48, 64, 96]
+            efConstruction: [200, 500]
+          query_args: [[100, 120, 150, 200, 500, 600, 800]]
+    - base_args: ["@metric", "@dimension"]
+      constructor: VearchBinaryIvf
+      disabled: False
+      docker_tag: bigvectorbench-vearch
+      module: bigvectorbench.algorithms.vearch
+      name: vearch-biivf
+      run_groups:
+        IVFFLAT_32:
+          arg_groups: [{ ncentroids: 32 }]
+          query_args: [[1, 4, 8, 16, 32]]
+        IVFFLAT_64:
+          arg_groups: [{ ncentroids: 64 }]
+          query_args: [[4, 16, 32, 48, 64]]
+        IVFFLAT_128:
+          arg_groups: [{ ncentroids: 128 }]
+          query_args: [[8, 32, 64, 96, 128]]
+        IVFFLAT_512:
+          arg_groups: [{ ncentroids: 512 }]
+          query_args: [[32, 128, 256, 384, 512]]
+        IVFFLAT_1024:
+          arg_groups: [{ ncentroids: 1024 }]
+          query_args: [[64, 256, 512, 768, 1024]]
+        IVFFLAT_2048:
+          arg_groups: [{ ncentroids: 2048 }]
+          query_args: [[128, 512, 1024, 1536, 2048]]
+        IVFFLAT_4096:
+          arg_groups: [{ ncentroids: 4096 }]
+          query_args: [[256, 1024, 2048, 3072, 4096]]
+        IVFFLAT_8192:
+          arg_groups: [{ ncentroids: 8192 }]
+          query_args: [[512, 2048, 4096, 6144, 8192]]
+    - base_args: ["@metric", "@dimension"]
+      constructor: VearchIvfFlat
+      disabled: False
+      docker_tag: bigvectorbench-vearch
+      module: bigvectorbench.algorithms.vearch
+      name: vearch-ivfflat
+      run_groups:
+        IVFFLAT_32:
+          arg_groups: [{ ncentroids: 32 }]
+          query_args: [[1, 4, 8, 16, 32]]
+        IVFFLAT_64:
+          arg_groups: [{ ncentroids: 64 }]
+          query_args: [[4, 16, 32, 48, 64]]
+        IVFFLAT_128:
+          arg_groups: [{ ncentroids: 128 }]
+          query_args: [[8, 32, 64, 96, 128]]
+        IVFFLAT_512:
+          arg_groups: [{ ncentroids: 512 }]
+          query_args: [[32, 128, 256, 384, 512]]
+        IVFFLAT_1024:
+          arg_groups: [{ ncentroids: 1024 }]
+          query_args: [[64, 256, 512, 768, 1024]]
+        IVFFLAT_2048:
+          arg_groups: [{ ncentroids: 2048 }]
+          query_args: [[128, 512, 1024, 1536, 2048]]
+        IVFFLAT_4096:
+          arg_groups: [{ ncentroids: 4096 }]
+          query_args: [[256, 1024, 2048, 3072, 4096]]
+        IVFFLAT_8192:
+          arg_groups: [{ ncentroids: 8192 }]
+          query_args: [[512, 2048, 4096, 6144, 8192]]
+    - base_args: ["@metric", "@dimension"]
+      constructor: VearchIvfPQ
+      disabled: False
+      docker_tag: bigvectorbench-vearch
+      module: bigvectorbench.algorithms.vearch
+      name: vearch-ivfpq
+      run_groups:
+        IVFPQ_64:
+          args:
+            ncentroids: [64]
+            nsubvector: [4, 8, 16]
+          query_args: [[4, 8, 16, 32, 64]]
+        IVFPQ_128:
+          args:
+            ncentroids: [128]
+            nsubvector: [4, 8, 16]
+          query_args: [[8, 16, 32, 64, 128]]
+        IVFPQ_256:
+          args:
+            ncentroids: [256]
+            nsubvector: [4, 8, 16]
+          query_args: [[16, 32, 64, 128, 256]]
+        IVFPQ_512:
+          args:
+            ncentroids: [512]
+            nsubvector: [4, 8, 16]
+          query_args: [[32, 64, 128, 256, 512]]
+        IVFPQ_1024:
+          args:
+            ncentroids: [1024]
+            nsubvector: [4, 8, 16]
+          query_args: [[64, 128, 256, 512, 1024]]

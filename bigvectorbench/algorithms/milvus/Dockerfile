@@ -1,4 +1,4 @@
-FROM bigvectorbench
+FROM bigvectorbench-base
 
 # Install Milvus Python SDK
 RUN pip3 install pymilvus==2.4.4

@@ -1,12 +1,12 @@
-FROM ubuntu:22.04
+FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
 
-# Change apt source to Tsinghua mirror
-# RUN sed -i 's/http:\/\/archive.ubuntu.com/http:\/\/mirrors.tuna.tsinghua.edu.cn\/ubuntu/g' /etc/apt/sources.list \
-#     && apt-get clean
+# # Change apt source to Tsinghua mirror
+# RUN sed -i 's/http:\/\/archive.ubuntu.com/http:\/\/mirrors.tuna.tsinghua.edu.cn\/ubuntu/g' /etc/apt/sources.list
+# RUN apt-get clean
 
 # Install Python3 and pip3
 RUN apt-get update \
-    && apt-get install -y python3 python3-pip wget \
+    && apt-get install -y python3 python3-pip wget gnupg \
     && python3 -m pip install --upgrade pip \
     && python3 --version
 # Change pip source to Tsinghua mirror
@@ -36,7 +36,7 @@ RUN echo \
     $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
     tee /etc/apt/sources.list.d/docker.list > /dev/null
 # # Use Tsinghua mirror to install Docker
-#     RUN apt-get update \
+# RUN apt-get update \
 #     && apt-get install -y ca-certificates curl \
 #     && install -m 0755 -d /etc/apt/keyrings \
 #     && curl -fsSL https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc \
@@ -48,3 +48,15 @@ RUN echo \
 # To install the latest version of Docker
 RUN apt-get update \
     && apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
+# Add NVIDIA's official GPG key:
+RUN curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+    && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+# To install the latest version of NVIDIA Container Toolkit
+RUN apt-get update \
+    && apt-get install -y nvidia-container-toolkit
+# Configure the runtime
+RUN nvidia-ctk runtime configure --runtime=docker

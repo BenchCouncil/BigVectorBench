@@ -2,7 +2,6 @@
 
 import subprocess
 from time import sleep, time
-import docker
 import numpy as np
 
 from qdrant_client import QdrantClient, models
@@ -42,9 +41,6 @@ class Qdrant(BaseANN):
         self._collection_name = "Qdrant_test"
         self._m = index_param.get("M", None)
         self._ef_construct = index_param.get("efConstruction", None)
-        self.docker_client = None
-        self.docker_name = "Qdrant"
-        self.container = None
         self.start_container()
         self.client = QdrantClient(url="http://localhost:6333", timeout=10)
         print("[Qdrant] client connected successfully!!!")
@@ -159,7 +155,7 @@ class Qdrant(BaseANN):
 
     def set_query_arguments(self, ef, exact):
         """
-        Set query arguments for weaviate query with hnsw index
+        Set query arguments for query with hnsw index
         """
         self.search_params = models.SearchParams(hnsw_ef=ef, exact=exact)
         self.name = f"Qdrant metric:{self._metric} m:{self._m} ef_construct:{self._ef_construct} ef:{ef} exact:{exact}"

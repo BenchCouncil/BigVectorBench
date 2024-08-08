@@ -1,0 +1,25 @@
+# https://github.com/vearch/vearch/blob/master/cloud/docker-compose.yml
+# commit id: 0721ce99741d42bf3076172f9f3e6910403c4bdd
+# Fixed Vearch docker image version from latest to 3.5.2
+
+networks:
+  vearch_network_cluster:
+    driver: bridge
+    name: vearch_network_cluster
+
+services:
+  standalone:
+    container_name: vearch-standalone
+    image: vearch/vearch:3.5.2
+    privileged: true
+    networks:
+      - vearch_network_cluster
+    ports:
+      - "8817:8817"
+      - "9001:9001"
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/config.toml:/vearch/config.toml
+    command: all
+    profiles:
+      - standalone
+      

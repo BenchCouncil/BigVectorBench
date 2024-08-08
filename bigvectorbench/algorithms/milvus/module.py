@@ -46,7 +46,7 @@ class Milvus(BaseANN):
         self._metric_type = metric_mapping(self._metric)
         self.start_milvus()
         self.connects = connections
-        self.connects.connect("default", host="0.0.0.0", port="19530", timeout=30)
+        self.connects.connect("default", host="localhost", port="19530", timeout=30)
         print(f"[Milvus] Milvus version: {utility.get_server_version()}")
         self.collection_name = "test_milvus"
         self.collection = None
