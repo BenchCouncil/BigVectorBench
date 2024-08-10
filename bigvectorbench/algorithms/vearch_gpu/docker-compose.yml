@@ -10,7 +10,7 @@ networks:
 services:
   standalone:
     container_name: vearch-standalone
-    image: vearch/vearch:3.5.2
+    image: vearch/vearch_gpu:3.5.2
     privileged: true
     networks:
       - vearch_network_cluster
@@ -20,6 +20,13 @@ services:
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/config.toml:/vearch/config.toml
     command: all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: ["gpu"]
+              device_ids: ["0"]
     profiles:
       - standalone
       
