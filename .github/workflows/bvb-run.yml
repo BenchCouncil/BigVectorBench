@@ -32,10 +32,11 @@ jobs:
           - bruteforce
           - dummy_algo
           - milvus
-          # - milvus_gpu # GPU support is not available in the free tier
           - qdrant
           - weaviate
-          - vearch
+          # - vearch # Vearch test is disabled temporarily due to disk space constraints.
+          # GPU support is not available in the free tier
+          # - milvus_gpu
           # - vearch_gpu
 
     name: ${{ matrix.library }} (${{ matrix.dataset }})
