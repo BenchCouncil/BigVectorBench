@@ -55,12 +55,16 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    print("Building base image...")
-    subprocess.check_call(
-        "docker build --rm -t bigvectorbench -f bigvectorbench/algorithms/base/Dockerfile .",
-        shell=True,
-    )
-    print("Building base image done.")
+    print("Building base & base_gpu image...")
+    with Pool(processes=2) as pool:
+        pool.map(
+            build_multiprocess,
+            [
+                ("base", args.build_arg),
+                ("base_gpu", args.build_arg),
+            ],
+        )
+    print("Building base & base_gpu image done.")
 
     if args.algorithm:
         tags = [args.algorithm]
@@ -70,7 +74,7 @@ if __name__ == "__main__":
         tags = [
             fn
             for fn in os.listdir("bigvectorbench/algorithms")
-            if fn not in ["__init__.py", "__pycache__", "base"]
+            if fn not in ["__init__.py", "__pycache__", "base", "base_gpu"]
         ]
     print(f"Building algorithms: {tags}...")
 
