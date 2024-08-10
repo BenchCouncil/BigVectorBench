@@ -91,11 +91,16 @@ python run.py --dataset app_reviews-384-euclidean-filter --count 100 --runs 3 --
   - weaviate-hnsw
 - [Qdrant](https://qdrant.com/)
   - qdrant
+- [Vearch](https://vearch.github.io/)
+  - vearch-flat
+  - vearch-biivf
+  - vearch-ivfflat
+  - vearch-ivfpq
+  - vearch-hnsw
 
 **TODO**
 
 - [Elasitcsearch](https://www.elastic.co/)
-- [Vearch](https://vearch.github.io/)
 - [Redis](https://redis.io/)
 - [Vespa](https://vespa.ai/)
 - [SPTAG](https://github.com/microsoft/SPTAG)
