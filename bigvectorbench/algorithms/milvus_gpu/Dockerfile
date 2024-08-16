@@ -1,7 +1,7 @@
 FROM bigvectorbench-base_gpu
 
 # Install Milvus Python SDK
-RUN pip3 install pymilvus==2.4.4
+RUN pip3 install pymilvus==2.4.5
 RUN python3 -c "from pymilvus import Collection"
 
 # Install milvus standalone by docker-compose.yml

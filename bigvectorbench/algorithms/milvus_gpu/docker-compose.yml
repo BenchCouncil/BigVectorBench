@@ -1,5 +1,5 @@
 # This file is used to start the Milvus service with GPU support.
-# Download: wget https://github.com/milvus-io/milvus/releases/download/v2.4.6/milvus-standalone-docker-compose-gpu.yml -O docker-compose.yml
+# Download: wget https://github.com/milvus-io/milvus/releases/download/v2.4.8/milvus-standalone-docker-compose-gpu.yml -O docker-compose.yml
 
 
 services:
@@ -40,7 +40,7 @@ services:
 
   standalone:
     container_name: milvus-standalone
-    image: milvusdb/milvus:v2.4.6-gpu
+    image: milvusdb/milvus:v2.4.8-gpu
     command: ["milvus", "run", "standalone"]
     security_opt:
     - seccomp:unconfined

@@ -1,5 +1,5 @@
 # Description: This file is used to define the docker-compose configuration for the Milvus service.
-# Download: wget https://github.com/milvus-io/milvus/releases/download/v2.4.6/milvus-standalone-docker-compose.yml -O docker-compose.yml
+# Download: wget https://github.com/milvus-io/milvus/releases/download/v2.4.8/milvus-standalone-docker-compose.yml -O docker-compose.yml
 
 services:
   etcd:
@@ -39,7 +39,7 @@ services:
 
   standalone:
     container_name: milvus-standalone
-    image: milvusdb/milvus:v2.4.6
+    image: milvusdb/milvus:v2.4.8
     command: ["milvus", "run", "standalone"]
     security_opt:
     - seccomp:unconfined
