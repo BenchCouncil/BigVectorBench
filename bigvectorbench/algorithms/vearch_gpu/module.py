@@ -11,7 +11,6 @@ class VearchGPUIvfPQ(VearchBase):
         super().__init__(metric, dim)
         self._ncentroids = index_param.get("ncentroids", 2048)
         self._nsubvector = index_param.get("nsubvector", 64)
-        self.name = f"Vearch GPUIvfPQ metric:{self._metric}"
 
     def get_vector_index(self):
         """Get GPUIvfPQ vector index"""
@@ -31,3 +30,4 @@ class VearchGPUIvfPQ(VearchBase):
             "nprobe": nprobe,
             "parallel_on_queries": 0,
         }
+        self.name = f"Vearch GPUIvfPQ metric:{self._metric}, ncentroids:{self._ncentroids}, nsubvector:{self._nsubvector}, search_nprobe:{nprobe}"

@@ -29,7 +29,7 @@ class MilvusGPU_BF(Milvus):
     def get_index_param(self):
         return {"index_type": "GPU_BRUTE_FORCE", "metric_type": self._metric_type}
 
-    def query(self, v, n, expr=None):
+    def query(self, v, n, filter_expr=None):
         self.search_params = {
             "metric_type": self._metric_type,
         }
@@ -37,7 +37,7 @@ class MilvusGPU_BF(Milvus):
             data=[v],
             anns_field="vector",
             param=self.search_params,
-            expr=expr,
+            expr=filter_expr,
             limit=n,
             output_fields=["id"],
         )
@@ -107,7 +107,9 @@ class MilvusGPU_IVFPQ(Milvus):
             "metric_type": self._metric_type,
             "params": {"nprobe": nprobe},
         }
-        self.name = f"MilvusGPU_IVFPQ metric:{self._metric}, index_nlist:{self._index_nlist}, search_nprobe:{nprobe}"
+        self.name = f"MilvusGPU_IVFPQ metric:{self._metric}, \
+            index_nlist:{self._index_nlist}, index_m:{self._index_m}, index_nbits:{self._index_nbits}, \
+            search_nprobe:{nprobe}"
 
 
 class MilvusGPU_CAGRA(Milvus):
@@ -155,4 +157,8 @@ class MilvusGPU_CAGRA(Milvus):
                 "team_size": team_size,
             },
         }
-        self.name = f"MilvusGPU_CAGRA metric:{self._metric}, itopk_size:{itopk_size}, search_width:{search_width}, min_iterations:{min_iterations}, max_iterations:{max_iterations}, team_size:{team_size}"
+        self.name = f"MilvusGPU_CAGRA metric:{self._metric}, \
+            index_intermediate_graph_degree:{self._index_intermediate_graph_degree}, \
+            index_graph_degree:{self._index_graph_degree}, build_algo:{self._build_algo}, \
+            itopk_size:{itopk_size}, search_width:{search_width}, min_iterations:{min_iterations}, \
+            max_iterations:{max_iterations}, team_size:{team_size}"
