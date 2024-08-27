@@ -654,7 +654,8 @@ class MilvusIVFPQ(Milvus):
             "params": {"nprobe": nprobe},
         }
         self.name = f"MilvusIVFPQ metric:{self._metric}, \
-            index_nlist:{self._index_nlist}, search_nprobe:{nprobe}"
+            index_nlist:{self._index_nlist}, index_m:{self._index_m}, index_nbits:{self._index_nbits}, \
+            search_nprobe:{nprobe}"
 
 
 class MilvusHNSW(Milvus):

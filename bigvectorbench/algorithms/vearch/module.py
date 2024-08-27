@@ -398,7 +398,6 @@ class VearchHNSW(VearchBase):
         super().__init__(metric, dim)
         self._nlinks = index_param.get("nlinks", 32)
         self._efConstruction = index_param.get("efConstruction", 40)
-        self.name = f"Vearch HNSW metric:{self._metric}"
 
     def get_vector_index(self):
         """Get HNSW vector index"""
@@ -417,6 +416,7 @@ class VearchHNSW(VearchBase):
             "metric_type": self._metric_type,
             "efSearch": efSearch,
         }
+        self.name = f"Vearch HNSW metric:{self._metric}, nlinks:{self._nlinks}, efConstruction:{self._efConstruction}, efSearch:{efSearch}"
 
 
 class VearchIvfFlat(VearchBase):
@@ -425,7 +425,6 @@ class VearchIvfFlat(VearchBase):
     def __init__(self, metric: str, dim: int, index_param: dict):
         super().__init__(metric, dim)
         self._ncentroids = index_param.get("ncentroids", 2048)
-        self.name = f"Vearch IvfFlat metric:{self._metric}"
 
     def get_vector_index(self):
         """Get IvfFlat vector index"""
@@ -445,6 +444,7 @@ class VearchIvfFlat(VearchBase):
             "nprobe": nprobe,
             "parallel_on_queries": 0,
         }
+        self.name = f"Vearch IvfFlat metric:{self._metric}, ncenroids:{self._ncentroids}, nprobe:{nprobe}"
 
 
 class VearchIvfPQ(VearchBase):
@@ -454,7 +454,6 @@ class VearchIvfPQ(VearchBase):
         super().__init__(metric, dim)
         self._ncentroids = index_param.get("ncentroids", 2048)
         self._nsubvector = index_param.get("nsubvector", 64)
-        self.name = f"Vearch IvfPQ metric:{self._metric}"
 
     def get_vector_index(self):
         """Get IvfPQ vector index"""
@@ -475,6 +474,7 @@ class VearchIvfPQ(VearchBase):
             "nprobe": nprobe,
             "parallel_on_queries": 0,
         }
+        self.name = f"Vearch IvfPQ metric:{self._metric}, ncenroids:{self._ncentroids}, nsuvectors:{self._nsubvector}, nprobe:{nprobe}"
 
 
 class VearchBinaryIvf(VearchBase):
@@ -483,7 +483,6 @@ class VearchBinaryIvf(VearchBase):
     def __init__(self, metric: str, dim: int, index_param: dict):
         super().__init__(metric, dim)
         self._ncentroids = index_param.get("ncentroids", 2048)
-        self.name = f"Vearch BinaryIvf metric:{self._metric}"
 
     def get_vector_index(self):
         """Get BinaryIvf vector index"""
@@ -501,3 +500,4 @@ class VearchBinaryIvf(VearchBase):
             "metric_type": self._metric_type,
             "nprobe": nprobe,
         }
+        self.name = f"Vearch BinaryIvf metric:{self._metric}, ncenroids:{self._ncentroids}, nprobe:{nprobe}"
