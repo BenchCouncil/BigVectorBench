@@ -383,7 +383,7 @@ class VearchFlat(VearchBase):
 
     def set_query_arguments(self):
         """
-        Set query arguments for weaviate query with hnsw index
+        Set query arguments for vearch query with flat index
         """
         self.search_params = {
             "metric_type": self._metric_type,
@@ -410,7 +410,7 @@ class VearchHNSW(VearchBase):
 
     def set_query_arguments(self, efSearch: int = 40):
         """
-        Set query arguments for weaviate query with hnsw index
+        Set query arguments for veaviate query with hnsw index
         """
         self.search_params = {
             "metric_type": self._metric_type,

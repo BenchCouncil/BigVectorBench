@@ -97,11 +97,13 @@ python run.py --dataset app_reviews-384-euclidean-filter --count 100 --runs 3 --
   - vearch-ivfflat
   - vearch-ivfpq
   - vearch-hnsw
+- [Redis](https://redis.io/)
+  - redis-flat
+  - redis-hnsw
 
 **TODO**
 
 - [Elasitcsearch](https://www.elastic.co/)
-- [Redis](https://redis.io/)
 - [Vespa](https://vespa.ai/)
 - [SPTAG](https://github.com/microsoft/SPTAG)
 - [pgvector](https://github.com/pgvector/pgvector)

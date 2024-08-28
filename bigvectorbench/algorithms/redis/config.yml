@@ -1,0 +1,23 @@
+float:
+  euclidean:
+    - base_args: ["@metric", "@dimension"]
+      constructor: RedisFlat
+      disabled: False
+      docker_tag: bigvectorbench-redis
+      module: bigvectorbench.algorithms.redis
+      name: redis-flat
+      run_groups:
+        FLAT:
+          args: []
+    - base_args: ["@metric", "@dimension"]
+      constructor: RedisHNSW
+      disabled: False
+      docker_tag: bigvectorbench-redis
+      module: bigvectorbench.algorithms.redis
+      name: redis-hnsw
+      run_groups:
+        HNSW:
+          args:
+            m: [4, 8, 12, 16, 24, 36, 48, 64, 96]
+            ef_construction: [200, 500]
+            ef_runtime: [100, 120, 150, 200, 500, 600, 800]

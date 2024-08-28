@@ -34,6 +34,7 @@ jobs:
           - milvus
           - qdrant
           - weaviate
+          - redis
           # - vearch # Vearch test is disabled temporarily due to disk space constraints.
           # GPU support is not available in the free tier
           # - milvus_gpu
