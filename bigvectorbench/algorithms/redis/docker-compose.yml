@@ -1,0 +1,14 @@
+services:
+  redis:
+    image: redis/redis-stack-server:7.4.0-v0
+    container_name: redis
+    ports:
+      - "6379:6379"
+    environment:
+      - "REDIS_ARGS=--save '' --appendonly no"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    labels:
+      - "com.docker.compose.publishers=redis,6379,6379"
