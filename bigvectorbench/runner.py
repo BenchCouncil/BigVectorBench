@@ -135,7 +135,7 @@ def run_individual_query(
                 exprs = [filter_expr(*labels) for labels in X_labels]
             # TODO: consider using a dataclass to represent return value.
             if prepared_queries:
-                algo.prepare_batch_query(X, count)
+                algo.prepare_batch_query(X, count, exprs)
                 start = time.time()
                 algo.run_prepared_batch_query()
                 total = time.time() - start
