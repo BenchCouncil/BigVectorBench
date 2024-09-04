@@ -1,0 +1,15 @@
+float:
+  euclidean:
+    - base_args: ["@metric", "@dimension"]
+      constructor: ElasticsearchHNSW
+      disabled: False
+      docker_tag: bigvectorbench-elasticsearch
+      module: bigvectorbench.algorithms.elasticsearch
+      name: elasticsearch-hnsw
+      run_groups:
+        HNSW:
+          args:
+            M: [4, 8, 12, 16, 24, 36, 48, 64, 96]
+            efConstruction: [200, 500]
+            ef_runtime: [100, 120, 150, 200, 500, 600, 800]
+          query_args: [[100, 120, 150, 200, 500, 600, 800]]
