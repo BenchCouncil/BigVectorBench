@@ -10,4 +10,4 @@ RUN mkdir -p /etc/docker \
 
 # Install milvus standalone by docker-compose.yml
 COPY bigvectorbench/algorithms/elasticsearch/docker-compose.yml ./
-COPY bigvectorbench/algorithms/elasticsearch/.env ./
+# COPY bigvectorbench/algorithms/elasticsearch/.env ./
