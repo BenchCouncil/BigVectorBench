@@ -764,6 +764,7 @@ def run_docker(
         },
         cpuset_cpus=cpuset_cpus,
         mem_limit=mem_limit,
+        network_mode="host",
         detach=True,
         privileged=True,
         runtime="nvidia" if os.path.exists("/usr/bin/nvidia-smi") else None,
