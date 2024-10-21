@@ -74,6 +74,7 @@ class Weaviate(BaseANN):
         self.batch_query_filters = None
         self.batch_results = []
         self.batch_latencies = []
+        super().__init__()
 
     def start_weaviate(self) -> None:
         """
