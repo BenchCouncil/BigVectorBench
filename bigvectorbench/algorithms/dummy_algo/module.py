@@ -11,6 +11,7 @@ class DummyAlgo(BaseANN):
     def __init__(self, metric):
         self.name = "DummyAlgo"
         self.len = 0
+        super().__init__()
 
     def load_data(
         self,

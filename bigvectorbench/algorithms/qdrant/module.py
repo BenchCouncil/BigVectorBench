@@ -62,6 +62,7 @@ class Qdrant(BaseANN):
         self.batch_search_queries = []
         self.batch_results = []
         self.batch_latencies = []
+        super().__init__()
 
     def start_container(self) -> None:
         """

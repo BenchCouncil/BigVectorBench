@@ -59,6 +59,7 @@ class ElasticsearchBase(BaseANN):
         self.batch_search_queries = []
         self.batch_results = []
         self.batch_latencies = []
+        super().__init__()
 
     def start_container(self) -> None:
         """
@@ -86,7 +87,7 @@ class ElasticsearchBase(BaseANN):
             )
             print("[Elasticsearch] docker compose down successfully!!!")
         except subprocess.CalledProcessError as e:
-            print(f"[Vearch] docker compose down failed: {e}!!!")
+            print(f"[Elasticsearch] docker compose down failed: {e}!!!")
 
     def get_vector_index(self):
         """Get vector index"""
@@ -288,7 +289,7 @@ class ElasticsearchBase(BaseANN):
     #         filter=self.query_filter,
     #         limit=self.query_topk,
     #     )
-    #     # print(f"[Vearch] query result: {ret.__dict__}")
+    #     # print(f"[Elasticsearch] query result: {ret.__dict__}")
     #     self.prepare_query_results = [point["id"] for point in ret.documents[0]]
 
     # def get_prepared_query_results(self) -> list[int]:
@@ -369,7 +370,7 @@ class ElasticsearchBase(BaseANN):
     #     Returns:
     #         None
     #     """
-    #     # print(f"[Vearch] delete index: {index}")
+    #     # print(f"[Elasticsearch] delete index: {index}")
     #     self.client.delete(
     #         database_name=self._database_name,
     #         space_name=f"{self._database_name}_space",

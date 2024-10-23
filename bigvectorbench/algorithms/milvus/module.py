@@ -69,6 +69,7 @@ class Milvus(BaseANN):
         self.batch_results = []
         self.batch_latencies = []
         self.requests = []
+        super().__init__()
 
     def start_milvus(self) -> None:
         """
