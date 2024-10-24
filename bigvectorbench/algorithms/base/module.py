@@ -51,7 +51,13 @@ class BaseANN(object):
         else:
             sum_memory = 0
             for container in self.containers:
-                sum_memory += container.stats(stream=False)["memory_stats"]["usage"] / 1024
+                memory_stats = container.stats(stream=False)["memory_stats"]
+                if "usage" in memory_stats:
+                    sum_memory += memory_stats["usage"] / 1024
+                else:
+                    # Handle the missing key case appropriately
+                    sum_memory += 0  # or any other default handling
+                    print("Memory usage not available", memory_stats)
             return sum_memory
 
     def load_data(
