@@ -52,6 +52,7 @@ class RedisBase(BaseANN):
         self.search_params = None
         self.query = None
         self.prepare_query_results = None
+        super().__init__()
 
     def start_container(self) -> None:
         """
