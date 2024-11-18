@@ -13,7 +13,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", help="Path to the output file", required=True)
     parser.add_argument("--recompute", action="store_true", help="Recompute metrics")
-    parser.add_argument("--batch", action="store_true", help="Export batch results", default=False)
+    parser.add_argument("--batch", action="store_true", help="Export results in batch mode", default=False)
     args = parser.parse_args()
 
     datasets = DATASETS.keys()
