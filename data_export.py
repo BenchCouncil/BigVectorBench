@@ -20,7 +20,7 @@ if __name__ == "__main__":
     dfs = []
     for dataset_name in datasets:
         print("Looking at dataset", dataset_name)
-        if len(list(load_all_results(dataset_name))) > 0:
+        if len(list(load_all_results(dataset_name, batch_mode=args.batch))) > 0:
             results = load_all_results(dataset_name, batch_mode=args.batch)
             dataset, _ = get_dataset(dataset_name)
             results = compute_metrics_all_runs(dataset, results, args.recompute)
