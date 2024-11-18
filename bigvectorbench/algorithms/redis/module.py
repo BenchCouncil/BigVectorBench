@@ -337,6 +337,7 @@ class RedisHNSW(RedisBase):
         self._ef_construction = index_param.get("ef_construction", 200)
         self._ef_runtime = index_param.get("ef_runtime", 10)
         self._epsilon = index_param.get("epsilon", 0.01)
+        self.name = f"Redis HNSW metric:{self._metric} m:{self._m} ef_construction:{self._ef_construction} ef_runtime:{self._ef_runtime} epsilon:{self._epsilon}"
 
     def get_vector_index(self):
         """Get HNSW vector index"""
