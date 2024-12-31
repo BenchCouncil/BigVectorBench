@@ -1,0 +1,48 @@
+float:
+  any:
+    - base_args: ["@metric"]
+      constructor: PGVectorHNSW
+      disabled: false
+      docker_tag: bigvectorbench-pgvector
+      module: bigvectorbench.algorithms.pgvector
+      name: pgvector-hnsw
+      run_groups:
+        M-16:
+          arg_groups: [{M: 16, efConstruction: 200}]
+          # args: {}
+          query_args: [[10, 20, 40, 80, 120, 200, 400, 800]]
+        M-24:
+          arg_groups: [{M: 24, efConstruction: 200}]
+          # args: {}
+          query_args: [[10, 20, 40, 80, 120, 200, 400, 800]]
+    - base_args: ["@metric"]
+      constructor: PGVectorIVFFLAT
+      disabled: false
+      docker_tag: bigvectorbench-pgvector
+      module: bigvectorbench.algorithms.pgvector
+      name: pgvector-ivfflat
+      run_groups:
+        IVFFLAT_32:
+          arg_groups: [{ nlist: 32 }]
+          query_args: [[1, 4, 8, 16, 32]]
+        # IVFFLAT_64:
+        #   arg_groups: [{ nlist: 64 }]
+        #   query_args: [[4, 16, 32, 48, 64]]
+        # IVFFLAT_128:
+        #   arg_groups: [{ nlist: 128 }]
+        #   query_args: [[8, 32, 64, 96, 128]]
+        # IVFFLAT_512:
+        #   arg_groups: [{ nlist: 512 }]
+        #   query_args: [[32, 128, 256, 384, 512]]
+        # IVFFLAT_1024:
+        #   arg_groups: [{ nlist: 1024 }]
+        #   query_args: [[64, 256, 512, 768, 1024]]
+        # IVFFLAT_2048:
+        #   arg_groups: [{ nlist: 2048 }]
+        #   query_args: [[128, 512, 1024, 1536, 2048]]
+        # IVFFLAT_4096:
+        #   arg_groups: [{ nlist: 4096 }]
+        #   query_args: [[256, 1024, 2048, 3072, 4096]]
+        # IVFFLAT_8192:
+        #   arg_groups: [{ nlist: 8192 }]
+        #   query_args: [[512, 2048, 4096, 6144, 8192]]
