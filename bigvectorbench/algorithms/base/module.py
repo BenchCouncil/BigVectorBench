@@ -3,6 +3,7 @@
 from multiprocessing.pool import ThreadPool
 from typing import Any, Dict, Optional
 import psutil
+import docker
 
 import numpy as np
 
@@ -11,6 +12,17 @@ class BaseANN(object):
     """
     Base class/interface for Approximate Nearest Neighbors (ANN) algorithms used in benchmarking.
     """
+    name = "BaseANN"
+    _num_entities = 0
+
+    def __init__(self):
+        try:
+            self.docker_client = docker.from_env()
+            self.containers = self.docker_client.containers.list()
+        except Exception:
+            print("Test environment is not dockerized")
+            self.docker_client = None
+            self.containers = []
 
     @property
     def num_entities(self) -> int:
@@ -34,7 +46,19 @@ class BaseANN(object):
             float: The current memory usage in kilobytes (for backwards compatibility), or None if
                 this information is not available.
         """
-        return psutil.Process().memory_info().rss / 1024
+        if self.docker_client is None:
+            return psutil.Process().memory_info().rss / 1024
+        else:
+            sum_memory = 0
+            for container in self.containers:
+                memory_stats = container.stats(stream=False)["memory_stats"]
+                if "usage" in memory_stats:
+                    sum_memory += memory_stats["usage"] / 1024
+                else:
+                    # Handle the missing key case appropriately
+                    sum_memory += 0  # or any other default handling
+                    print("Memory usage not available", memory_stats)
+            return sum_memory
 
     def load_data(
         self,
@@ -52,6 +76,7 @@ class BaseANN(object):
             label_names (list[str]): label names
             label_types (list[str]): label types
         """
+        raise NotImplementedError
 
     def create_index(self) -> None:
         """

@@ -8,6 +8,4 @@ RUN python3 -c "from elasticsearch import Elasticsearch"
 RUN mkdir -p /etc/docker \
     && echo '{"ip-masq": true, "iptables": true}' > /etc/docker/daemon.json
 
-# Install milvus standalone by docker-compose.yml
 COPY bigvectorbench/algorithms/elasticsearch/docker-compose.yml ./
-# COPY bigvectorbench/algorithms/elasticsearch/.env ./

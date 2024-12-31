@@ -4,11 +4,9 @@ import subprocess
 from time import sleep
 import numpy as np
 
-from elasticsearch import ConnectionError, Elasticsearch
-from elasticsearch.helpers import bulk
+from elasticsearch import Elasticsearch
 
 from bigvectorbench.algorithms.base.module import BaseANN
-import csv
 
 def metric_mapping(_metric: str):
     """
@@ -31,7 +29,6 @@ def metric_mapping(_metric: str):
 
 class ElasticsearchBase(BaseANN):
     """Elasticsearch implementation"""
-
     def __init__(self, metric: str, dim: int):
         self._metric = metric
         self._dim = dim
@@ -45,7 +42,7 @@ class ElasticsearchBase(BaseANN):
             print("[Elasticsearch] client connected successfully!!!")
         else:
             print("[Elasticsearch] client connected failed!!!")
-        
+
         self.num_labels = 0
         self.label_names = []
         self.load_batch_size = 1000
@@ -53,7 +50,8 @@ class ElasticsearchBase(BaseANN):
 
         self.name = f"Elasticsearch Base metric:{self._metric}"
         self.search_params = None
-        
+
+        self.index_name = ""
         self.query_vector = None
         self.query_topk = 0
         self.query_filter = None
@@ -61,6 +59,7 @@ class ElasticsearchBase(BaseANN):
         self.batch_search_queries = []
         self.batch_results = []
         self.batch_latencies = []
+        super().__init__()
 
     def start_container(self) -> None:
         """
@@ -88,7 +87,7 @@ class ElasticsearchBase(BaseANN):
             )
             print("[Elasticsearch] docker compose down successfully!!!")
         except subprocess.CalledProcessError as e:
-            print(f"[Vearch] docker compose down failed: {e}!!!")
+            print(f"[Elasticsearch] docker compose down failed: {e}!!!")
 
     def get_vector_index(self):
         """Get vector index"""
@@ -199,7 +198,7 @@ class ElasticsearchBase(BaseANN):
                 right = tokens[i + 1]
                 i += 4
 
-                # range，gte >=，lte <=，,gt >，lt <
+                # range, gte >=, lte <=, ,gt >, lt <
                 # term,=
                 if operator == ">=":
                     must_filters.append(
@@ -230,7 +229,6 @@ class ElasticsearchBase(BaseANN):
         return must_filters, must_not_filters
 
     def query(self, v, n, filter_expr=None):
-        filters = None
         if filter_expr is not None:
             must_filters, must_not_filters = self.convert_expr_to_filter(filter_expr)
         else:
@@ -291,7 +289,7 @@ class ElasticsearchBase(BaseANN):
     #         filter=self.query_filter,
     #         limit=self.query_topk,
     #     )
-    #     # print(f"[Vearch] query result: {ret.__dict__}")
+    #     # print(f"[Elasticsearch] query result: {ret.__dict__}")
     #     self.prepare_query_results = [point["id"] for point in ret.documents[0]]
 
     # def get_prepared_query_results(self) -> list[int]:
@@ -372,7 +370,7 @@ class ElasticsearchBase(BaseANN):
     #     Returns:
     #         None
     #     """
-    #     # print(f"[Vearch] delete index: {index}")
+    #     # print(f"[Elasticsearch] delete index: {index}")
     #     self.client.delete(
     #         database_name=self._database_name,
     #         space_name=f"{self._database_name}_space",

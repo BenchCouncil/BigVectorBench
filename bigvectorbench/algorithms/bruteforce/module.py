@@ -6,6 +6,7 @@ from bigvectorbench.algorithms.base.module import BaseANN
 
 
 class BruteForce(BaseANN):
+    """kNN search that uses a linear scan = brute force."""
     def __init__(self, metric):
         if metric not in ("angular", "euclidean", "hamming"):
             raise NotImplementedError("BruteForce doesn't support metric %s" % metric)
@@ -21,6 +22,7 @@ class BruteForce(BaseANN):
         self.labels = None
         self.label_names = None
         self.label_types = None
+        super().__init__()
 
     def load_data(
         self,
