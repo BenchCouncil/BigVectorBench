@@ -1,0 +1,14 @@
+float:
+  euclidean:
+    - base_args: ["@metric", "@dimension"]
+      constructor: SPTAGBKT
+      disabled: False
+      docker_tag: bigvectorbench-sptag
+      module: bigvectorbench.algorithms.sptag
+      name: sptag-bkt
+      run_groups:
+        BKT:
+          args:
+            nlist: [64]
+          query_args: [[100]]
+# , 128, 256, 512, 1024, 2048, 4096, 8192
