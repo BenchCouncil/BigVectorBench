@@ -132,7 +132,7 @@ def run_individual_query(
             """
             exprs = None
             if filter_expr_func is not None:
-                exprs = [filter_expr(*labels) for labels in X_labels]
+                exprs = [filter_expr(*(labels.flatten())) for labels in X_labels]
             # TODO: consider using a dataclass to represent return value.
             if prepared_queries:
                 algo.prepare_batch_query(X, count, exprs)
@@ -207,7 +207,7 @@ def run_individual_query(
                     results = batch_query(X_test, X_test_label)
                 else:
                     results = [
-                        single_query(x, labels)
+                        single_query(x, labels.flatten())
                         for x, labels in zip(X_test, X_test_label)
                     ]
         else:
@@ -267,7 +267,7 @@ def run_individual_insert(
     else:
         for i, (x, labels) in enumerate(zip(X_test, X_test_label)):
             start = time.time()
-            algo.insert(x, labels)
+            algo.insert(x, labels.flatten())
             latencies.append(time.time() - start)
             if i % 1000 == 0:
                 print(f"Processed {i}/{len(X_test)} inserts...")
@@ -305,7 +305,7 @@ def run_individual_update(
         for i, (x, labels) in enumerate(zip(X_test, X_test_label)):
             idx = np.random.randint(num_entities)
             start = time.time()
-            algo.update(idx, x, labels)
+            algo.update(idx, x, labels.flatten())
             latencies.append(time.time() - start)
             if i % 1000 == 0:
                 print(f"Processed {i}/{len(X_test)} updates...")

@@ -57,6 +57,7 @@ def get_dataset_fn(dataset_name: str) -> str:
     """
     if not os.path.exists("data"):
         os.mkdir("data")
+    
     return os.path.join("data", f"{dataset_name}.hdf5")
 
 
@@ -77,10 +78,14 @@ def get_dataset(dataset_name: str) -> Tuple[h5py.File, int]:
     if dataset_name in ANN_DATASETS or dataset_name in RANDOM_DATASETS:
         dataset_url = f"https://ann-benchmarks.com/{dataset_name}.hdf5"
     elif dataset_name in BVB_DATASETS:
-        dataset_url = f"https://huggingface.co/datasets/Patrickcode/BigVectorBench/resolve/main/{dataset_name}.hdf5"
+        dataset_url = f"https://huggingface.co/datasets/Patrickcode/BigVectorBench/blob/main/{dataset_name}.hdf5"
         # dataset_url = f"https://hf-mirror.com/datasets/Patrickcode/BigVectorBench/resolve/main/{dataset_name}.hdf5"
+    elif dataset_name in ART_DATASETS:
+        dataset_url = f"https://huggingface.co/datasets/Patrickcode/BigVectorBench/blob/main/{dataset_name}.hdf5"
+        # dataset_url = f"https://hf-mirror.com/datasets/Patrickcode/BigVectorBench/blob/main/{dataset_name}.hdf5"
     else:
-        raise ValueError(f"Unknown dataset: {dataset_name}")
+        raise ValueError(f"Unknown dataset: {dataset_name},datasets should be in {DATASETS.keys()} or be created by create_datasets.py then added in ART_DATASETS.key()")
+    
     try:
         download(dataset_url, hdf5_filename)
     except Exception:
@@ -931,7 +936,31 @@ BVB_DATASETS.update(
     }
 )
 
+def artificial_dataset(out_fn: str, dataset_name: str) -> None:
+    """
+    bvb_dataset: Downloads a dataset from the BigVectorBench repository on Hugging Face Datasets Hub
+    """
+    dataset_url = f"https://huggingface.co/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/{dataset_name}.hdf5"
+    # dataset_url = f"https://hf-mirror.com/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/{dataset_name}.hdf5"
+    download(dataset_url, out_fn)
+
+ART_DATASETS: Dict[str, Callable[[str], None]] = {
+    "deep1M-2filter-50a": lambda out_fn: artificial_dataset(
+        out_fn, "deep1M-2filter-50a"
+    ),
+    "msong-1filter-80a": lambda out_fn: artificial_dataset(
+        out_fn, "msong-1filter-80a"
+    ),
+    "sift10m-6filter-6a": lambda out_fn: artificial_dataset(
+        out_fn, "sift10m-6filter-6a"
+    ),
+    "tiny5m-6filter-12a": lambda out_fn: artificial_dataset(
+        out_fn, "tiny5m-6filter-12a"
+    )
+}
+
 DATASETS: Dict[str, Callable[[str], None]] = {}
 DATASETS.update(RANDOM_DATASETS)
 DATASETS.update(ANN_DATASETS)
 DATASETS.update(BVB_DATASETS)
+DATASETS.update(ART_DATASETS)

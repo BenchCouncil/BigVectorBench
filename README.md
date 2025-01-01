@@ -102,12 +102,15 @@ python run.py --dataset app_reviews-384-euclidean-filter --count 100 --runs 3 --
   - redis-hnsw
 - [Elasitcsearch](https://www.elastic.co/)
   - elasticsearch-hnsw
-
+- [SPTAG](https://github.com/microsoft/SPTAG)
+  - sptag-bkt
+- [pgvector](https://github.com/pgvector/pgvector)
+  - pgvector-hnsw
+  - pgvector-ivfflat
+  
 **TODO**
 
 - [Vespa](https://vespa.ai/)
-- [SPTAG](https://github.com/microsoft/SPTAG)
-- [pgvector](https://github.com/pgvector/pgvector)
 
 ## Use-cases for Compound Queries
 
@@ -236,6 +239,72 @@ The dataset at [Hugging Face - dbpedia-entities-openai3-text-embedding-3-large-3
 | -------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | dbpedia-entities-openai3-text-embedding-3-large-1536-1000k-euclidean | 990,000 / 10,000    | [OpenAI text-embedding-3-large](https://huggingface.co/datasets/Qdrant/dbpedia-entities-openai3-text-embedding-3-large-1536-1M) | 1536      | Euclidean | [link1](https://huggingface.co/datasets/Patrickcode/BigVectorBench/resolve/main/dbpedia-entities-openai3-text-embedding-3-large-1536-1000k-euclidean.hdf5), [link2](https://hf-mirror.com/datasets/Patrickcode/BigVectorBench/resolve/main/dbpedia-entities-openai3-text-embedding-3-large-1536-1000k-euclidean.hdf5) | [dbpedia-entities](https://huggingface.co/datasets/BeIR/dbpedia-entity) |
 | dbpedia-entities-openai3-text-embedding-3-large-3072-1000k-euclidean | 990,000 / 10,000    | [OpenAI text-embedding-3-large](https://huggingface.co/datasets/Qdrant/dbpedia-entities-openai3-text-embedding-3-large-3072-1M) | 3072      | Euclidean | [link1](https://huggingface.co/datasets/Patrickcode/BigVectorBench/resolve/main/dbpedia-entities-openai3-text-embedding-3-large-3072-1000k-euclidean.hdf5), [link2](https://hf-mirror.com/datasets/Patrickcode/BigVectorBench/resolve/main/dbpedia-entities-openai3-text-embedding-3-large-3072-1000k-euclidean.hdf5) | [dbpedia-entities](https://huggingface.co/datasets/BeIR/dbpedia-entity) |
+
+## ARTIFICIAL WORKLOADS
+
+### BUILD
+
+The command below will create a man-made datasets for test.
+
+```bash
+python create_artificial_datasets.py
+```
+
+Arguments:
+
+- `--n`: the number of train data to be generated (default: 10000)
+- `--m`: the number of test data to be generated (default: 1000)
+- `--d`: the dimension of data to be generated (default: 128)
+- `--l`: the number of labels for data to be generated (default: 1)
+- `--metric`: the metric type for distance to be calculated (default: angular)
+- `--maxlabel`: the max label value to be generated (default: 100000)
+- `--center`: the center numbers of the vectors to be generated (default: 100)
+
+### FORMAT
+
+- HDF5 format:
+  - Attributes:
+    - `type`: the type of the dataset (default: `ann`)
+      - `ann` or `dense`: ann datasets and large-scale datasets
+      - `filter-ann`: filter-ann datasets
+      - `mm-ann`: multi-modal datasets
+      - `mv-ann`: multi-vector datasets
+      - `sparse`: sparse datasets
+    - `distance`: the distance computation method (must be specified)
+      - `euclidean`: Euclidean distance
+      - `angular`: Angular distance
+      - `hamming`: Hamming distance
+      - `jaccard`: Jaccard distance
+    - `filter_expr_func`: the filter expression function (only available for the filter-ann datasets)
+    - `label_names`: the names of the labels (only available for the filter-ann datasets)
+    - `label_types`: the types of the labels (only available for the filter-ann datasets, e.g., `int32`)
+  - Datasets:
+    <!-- - `train`: the training vectors (available except for the filter-ann datasets)
+    - `test`: the query vectors (available except for the filter-ann datasets) -->
+    - `train_vec`: the training vectors (only available for the filter-ann datasets)
+    - `train_label`: the training labels (only available for the filter-ann datasets)
+    - `test_vec`: the query vectors (only available for the filter-ann datasets)
+    - `test_label`: the query labels (only available for the filter-ann datasets)
+    - `distances`: the ground truth distances between the query vectors and the training vectors
+    - `neighbors`: the ground truth neighbors containing the indices of the nearest neighbors
+  
+### STORE and USE
+
+- Store the datasets in the `./data` directory named as `artificial-*-*d-*l-*a.hdf5`.
+- You should add your new datasets name in `./bigvectorbench/datasets.py` line 947 to update the `ART_DATASETS` 's key.
+
+### Completed artificial workloads
+
+| Dataset                                                              | Data / Query Points |  Type                                                                                                                 | Dimension | Distance  | Label Numbers  | Filter Ratio  |Download                                                                                                                                                                                                                                                                                                              | Raw Data                                                                |
+| :--------------------------------------------------------------------: | :------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------: | :---------: | :---------: | :--------: | :---------: |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------: |
+| msong-1filter-80a | 990,000 / 10,000    | real vectors with artificial labels | 420  | Euclidean | 1 | 80% | [link1](https://huggingface.co/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/msong-1filter-80a.hdf5), [link2](https://hf-mirror.com/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/msong-1filter-80a.hdf5) | [msong](https://www.cse.cuhk.edu.hk/systems/hash/gqr/datasets.html) |
+| deep1M-2filter-50a | 1,000,000 / 10,000    | real vectors with artificial labels | 256  | Euclidean | 2 | 50% | [link1](https://huggingface.co/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/deep1M-2filter-50a.hdf5), [link2](https://hf-mirror.com/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/deep1M-2filter-50a.hdf5) | [deep1M](https://www.cse.cuhk.edu.hk/systems/hash/gqr/datasets.html) |
+| tiny5m-6filter-12a | 5,000,000 / 10,000    | real vectors with artificial labels | 384  | Euclidean | 6 | 12% | [link1](https://huggingface.co/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/tiny5m-6filter-12a.hdf5), [link2](https://hf-mirror.com/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/tiny5m-6filter-12a.hdf5) | [tiny5m](https://www.cse.cuhk.edu.hk/systems/hash/gqr/datasets.html) |
+| sift10m-6filter-6a | 10,000,000 / 10,000    | real vectors with artificial labels | 128  | Euclidean | 6 | 6% | [link1](https://huggingface.co/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/sift10m-6filter-6a.hdf5), [link2](https://hf-mirror.com/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/sift10m-6filter-6a.hdf5) | [sift10m](https://www.cse.cuhk.edu.hk/systems/hash/gqr/datasets.html) |
+| artificial-average-128d-1l-80a-euclidean-107 | 10,000,000 / 10,000    |artificial vectors with labels | 128  | Euclidean | 1 | 80% | [link1](https://huggingface.co/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/artificial-average-128d-1l-80a-euclidean-107.hdf5), [link2](https://hf-mirror.com/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/artificial-average-128d-1l-80a-euclidean-107.hdf5) | - |
+| artificial-average-128d-2l-50a-euclidean-107 | 10,000,000 / 10,000    |artificial vectors with labels | 128  | Euclidean | 2 | 50% | [link1](https://huggingface.co/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/artificial-average-128d-2l-50a-euclidean-107.hdf5), [link2](https://hf-mirror.com/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/artificial-average-128d-2l-50a-euclidean-107.hdf5) | - |
+| artificial-average-384d-6l-12a-euclidean-107 | 10,000,000 / 10,000    |artificial vectors with labels | 384  | Euclidean | 6 | 12% | [link1](https://huggingface.co/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/rtificial-average-384d-6l-12a-euclidean-107.hdf5), [link2](https://hf-mirror.com/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/rtificial-average-384d-6l-12a-euclidean-107.hdf5) | - |
+| artificial-average-768d-6l-6a-euclidean-107 | 10,000,000 / 10,000    |artificial vectors with labels | 768  | Euclidean | 6 | 6% | [link1](https://huggingface.co/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/artificial-average-768d-6l-6a-euclidean-107.hdf5), [link2](https://hf-mirror.com/datasets/AnnaZh/Bigvectorbench-artificial-datasets/resolve/main/artificial-average-768d-6l-6a-euclidean-107.hdf5) | - |
 
 ## Contributing
 
