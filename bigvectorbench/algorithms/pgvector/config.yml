@@ -15,16 +15,16 @@ float:
           arg_groups: [{M: 24, efConstruction: 200}]
           # args: {}
           query_args: [[10, 20, 40, 80, 120, 200, 400, 800]]
-    - base_args: ["@metric"]
-      constructor: PGVectorIVFFLAT
-      disabled: false
-      docker_tag: bigvectorbench-pgvector
-      module: bigvectorbench.algorithms.pgvector
-      name: pgvector-ivfflat
-      run_groups:
-        IVFFLAT_32:
-          arg_groups: [{ nlist: 32 }]
-          query_args: [[1, 4, 8, 16, 32]]
+    # - base_args: ["@metric"]
+    #   constructor: PGVectorIVFFLAT
+    #   disabled: false
+    #   docker_tag: bigvectorbench-pgvector
+    #   module: bigvectorbench.algorithms.pgvector
+    #   name: pgvector-ivfflat
+    #   run_groups:
+    #     IVFFLAT_32:
+    #       arg_groups: [{ nlist: 32 }]
+    #       query_args: [[1, 4, 8, 16, 32]]
         # IVFFLAT_64:
         #   arg_groups: [{ nlist: 64 }]
         #   query_args: [[4, 16, 32, 48, 64]]

@@ -11,9 +11,10 @@ from bigvectorbench.algorithms.base.module import BaseANN
 
 class PGVector(BaseANN):
     def __init__(self, metric, method_param):
+        super().__init__()
         self._metric = metric
-        self._m = method_param['M']
-        self._ef_construction = method_param['efConstruction']
+        self._m = method_param.get("M", 32)
+        self._ef_construction = method_param.get("efConstruction", 40)
         self._cur = None
         self.labels = None
         self.label_names = None
@@ -26,7 +27,6 @@ class PGVector(BaseANN):
             self._query = "SELECT id FROM items ORDER BY embedding <-> %s LIMIT %s"
         else:
             raise RuntimeError(f"Unknown metric {metric}")
-        
 
     def get_vector_index(self):
         """Get vector index"""
@@ -53,7 +53,7 @@ class PGVector(BaseANN):
             table_definition = f"id integer, embedding vector({embeddings.shape[1]})"
         cur.execute(f"CREATE TABLE items ({table_definition})")
         cur.execute("ALTER TABLE items ALTER COLUMN embedding SET STORAGE PLAIN")
-        
+
         if labels is not None and label_names is not None:
             with cur.copy(f"COPY items (id, embedding, {', '.join(label_names)}) FROM STDIN WITH (FORMAT BINARY)") as copy:
                 copy.set_types(["int4", "vector"] + ["int4" for _ in label_names])
@@ -64,16 +64,16 @@ class PGVector(BaseANN):
                 copy.set_types(["int4", "vector"])
                 for i, embedding in enumerate(embeddings):
                     copy.write_row((i, embedding))
-        
+
         print("Creating index...")
-        
+
         if self._metric == "angular":
             cur.execute("CREATE INDEX ON items USING %s (embedding vector_cosine_ops) WITH (m = %d, ef_construction = %d)" % (self.index,self._m, self._ef_construction))
         elif self._metric == "euclidean":
             cur.execute("CREATE INDEX ON items USING %s (embedding vector_l2_ops) WITH (m = %d, ef_construction = %d)" % (self.index,self._m, self._ef_construction))
         else:
             raise RuntimeError(f"Unknown metric {self._metric}")
-        
+
         print("Done!")
         self._cur = cur
 
@@ -109,7 +109,7 @@ class PGVector(BaseANN):
 
     def __str__(self):
         return f"PGVector(m={self._m}, ef_construction={self._ef_construction}, ef_search={self._ef_search})"
-    
+
     def insert(self, embeddings: np.ndarray, labels: np.ndarray | None = None) -> None:
         """
         Single insert data
@@ -122,9 +122,9 @@ class PGVector(BaseANN):
             None
         """
         if labels is not None and self.label_names is not None:
-            insert_sentence = (f"INSERT INTO items (id,embedding,{', '.join(self.label_names)}) VALUES ({self.num_entities+1},{embeddings},{', '.join(labels)})")
+            insert_sentence = f"INSERT INTO items (id,embedding,{', '.join(self.label_names)}) VALUES ({self.num_entities+1},'[{', '.join(map(str, embeddings.tolist()))}]',{', '.join(map(str, labels.tolist()))})"
         else:
-            insert_sentence = (f"INSERT INTO items (id,embedding) VALUES ({self.num_entities+1},{embeddings}")
+            insert_sentence = f"INSERT INTO items (id,embedding) VALUES ({self.num_entities+1},'[{', '.join(map(str, embeddings.tolist()))}]')"
         self._cur.execute(insert_sentence)
         self.num_entities += 1
 
@@ -142,10 +142,10 @@ class PGVector(BaseANN):
         Returns:
             None
         """
-        update_item = (f"embeddings = {embeddings},")
+        update_item = f"embedding = '[{', '.join(map(str, embeddings.tolist()))}]'"
         if labels is not None and self.label_names is not None:
-            for i in enumerate(self.label_names):
-                update_item += f"{self.label_names[i]} = {labels[i]}"
+            for i in range(len(self.label_names)):
+                update_item += f", {self.label_names[i]} = {str(labels[i].item())}"
         update_sentence = (f"UPDATE items SET {update_item} where id = {index}")
 
         self._cur.execute(update_sentence)
@@ -171,7 +171,7 @@ class PGVector(BaseANN):
 class PGVectorHNSW(PGVector):
     def __init__(self, metric: str, index_param: dict):
         super().__init__(metric, index_param)
-        self._nlinks = index_param.get("nlinks", 32)
+        self._m = index_param.get("M", 32)
         self._efConstruction = index_param.get("efConstruction", 40)
 
     def get_vector_index(self):
@@ -183,16 +183,15 @@ class PGVectorHNSW(PGVector):
         Set query arguments for pgvector query with hnsw index
         """
         self.search_params = {
-            "metric_type": self._metric_type,
+            "metric_type": self._metric,
             "efSearch": efSearch,
         }
-        self.name = f"pgvector HNSW metric:{self._metric}, nlinks:{self._nlinks}, efConstruction:{self._efConstruction}, efSearch:{efSearch}"
+        self.name = f"pgvector HNSW metric:{self._metric}, M:{self._m}, efConstruction:{self._efConstruction}, efSearch:{efSearch}"
 
 class PGVectorIVFFLAT(PGVector):
     def __init__(self, metric: str, index_param: dict):
         super().__init__(metric, index_param)
         self._nlinks = index_param.get("nlinks", 32)
-        self._efConstruction = index_param.get("efConstruction", 40)
 
     def get_vector_index(self):
         """Get IVFFLAT vector index"""
@@ -203,7 +202,7 @@ class PGVectorIVFFLAT(PGVector):
         Set query arguments for pgvector query with ivfflat index
         """
         self.search_params = {
-            "metric_type": self._metric_type,
+            "metric_type": self._metric,
             "efSearch": efSearch,
         }
-        self.name = f"pgvector ivfflat metric:{self._metric}, nlinks:{self._nlinks}, efConstruction:{self._efConstruction}, efSearch:{efSearch}"
+        self.name = f"pgvector ivfflat metric:{self._metric}, nlinks:{self._nlinks}, efSearch:{efSearch}"
