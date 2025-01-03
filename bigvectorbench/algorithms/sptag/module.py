@@ -1,12 +1,8 @@
 """ SPTAG module for BigVectorBench framework. """
 
-import subprocess
-from time import sleep
 import numpy as np
 import SPTAG
 from bigvectorbench.algorithms.base.module import BaseANN
-import csv
-import shutil
 
 def metric_mapping(_metric: str):
     """
@@ -31,6 +27,7 @@ class SPTAGBase(BaseANN):
     """SPTAG implementation"""
 
     def __init__(self, metric: str, dim: int):
+        super().__init__()
         self._metric = metric
         self._dim = dim
         self._metric_type = metric_mapping(metric)
@@ -109,7 +106,7 @@ class SPTAGBase(BaseANN):
 
     def query(self, v, n, filter_expr=None):
         if filter_expr is not None:
-            raise ValueError( f"[SPTAG] have not supported filter-query!!!" )
+            raise ValueError("[SPTAG] have not supported filter-query!!!")
         j = SPTAG.AnnIndex.Load(self.index_name)
         # print(j.Search(v.tobytes(), n)[0])
         # print(j.Search(v.tobytes(), n)[1])
