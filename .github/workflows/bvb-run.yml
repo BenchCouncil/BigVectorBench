@@ -36,6 +36,8 @@ jobs:
           - weaviate
           - redis
           - elasticsearch
+          - sptag
+          - pgvector
           # - vearch # Vearch test is disabled temporarily due to disk space constraints.
           # GPU support is not available in the free tier
           # - milvus_gpu
