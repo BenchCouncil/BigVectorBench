@@ -516,6 +516,10 @@ def main():
         force=args.force,
     )
 
+    if args.docker_tag:
+        logger.info("running only %s", args.docker_tag)
+        definitions = [d for d in definitions if d.docker_tag == args.docker_tag]
+
     if args.algorithm:
         logger.info("running only %s", args.algorithm)
         definitions = [d for d in definitions if d.algorithm == args.algorithm]
