@@ -68,6 +68,16 @@ def percentile_50(times):
     return np.percentile(times, 50.0) * 1000.0
 
 
+def percentile_90(times):
+    """
+    95th percentile
+
+    :param times: list of query times
+    :return: 95th percentile in milliseconds
+    """
+    return np.percentile(times, 90.0) * 1000.0
+
+
 def percentile_95(times):
     """
     95th percentile
@@ -160,6 +170,13 @@ all_metrics = {
     "p50": {
         "description": "Percentile 50 (millis)",
         "function": lambda true_neighbors, run_neighbors, metrics, times, run_attrs: percentile_50(
+            times
+        ),
+        "worst": float("inf"),
+    },
+    "p90": {
+        "description": "Percentile 50 (millis)",
+        "function": lambda true_neighbors, run_neighbors, metrics, times, run_attrs: percentile_90(
             times
         ),
         "worst": float("inf"),
