@@ -167,6 +167,14 @@ all_metrics = {
         ),
         "worst": float("-inf"),
     },
+    "avg_time": {
+        "description": "Average time (millis)",
+        "function": lambda true_neighbors, run_neighbors, metrics, times, run_attrs: np.mean(
+            times
+        )
+        * 1000.0,
+        "worst": float("inf"),
+    },
     "p50": {
         "description": "Percentile 50 (millis)",
         "function": lambda true_neighbors, run_neighbors, metrics, times, run_attrs: percentile_50(
